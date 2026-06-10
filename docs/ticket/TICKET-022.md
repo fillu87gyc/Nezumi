@@ -52,7 +52,7 @@ PR マージ時に自動でデプロイする GitHub Actions ワークフロー�
 - [ ] `.github/workflows/deploy.yml` を作成
   - トリガー: `push` to `main`
   - 環境変数: Cloudflare API Token を GitHub Secrets から取得
-  - ジョブ: `npm ci` → `npm run build` → `wrangler deploy`
+  - ジョブ: `pnpm install --frozen-lockfile` → `pnpm build` → `wrangler deploy`
 - [ ] `src/middleware/rateLimit.ts` を作成
   ```typescript
   export const redditRateLimit = createMiddleware<{ Bindings: Env }>(...) // 90 req/min/user

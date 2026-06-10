@@ -80,12 +80,14 @@ Nezumi/
 
 ---
 
-## クイックスタート
+## セットアップ
 
 ```bash
-# 依存インストール
-npm install
-cd client && npm install && cd ..
+# ツールバージョン確認・インストール（mise）
+mise install
+
+# 依存インストール（ルート + client をまとめて）
+pnpm install
 
 # シークレット設定
 wrangler secret put REDDIT_CLIENT_ID
@@ -100,10 +102,14 @@ wrangler d1 migrations apply nezumi-db --local
 
 # KV セットアップ
 wrangler kv:namespace create KV
+```
 
-# ローカル開発
-wrangler dev --local   # Workers
-cd client && npm run dev  # Vite
+## ローカル開発
+
+```bash
+# Workers と Vite を別ターミナルで起動
+pnpm dev:worker   # wrangler dev --local
+pnpm dev:client   # cd client && vite
 ```
 
 ---

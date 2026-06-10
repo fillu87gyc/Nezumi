@@ -34,20 +34,25 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 
 ## タスク
 
-- [ ] `npm create hono@latest` でルートプロジェクト初期化
-- [ ] `client/` に `npm create vite@latest -- --template react-ts` 実行
-- [ ] ルート `package.json` に workspace スクリプト追加
+- [ ] mise がインストール済みであることを確認し `.mise.toml` の node/pnpm バージョンを `mise install` で取得
+- [ ] `pnpm create hono@latest .` でルートプロジェクト初期化（カレントディレクトリに展開）
+- [ ] `client/` に `pnpm create vite@latest client -- --template react-ts` 実行
+- [ ] `pnpm-workspace.yaml` で `client` をワークスペースとして宣言（既存ファイル）
+- [ ] ルート `package.json` に engines フィールドとスクリプトを追加
   ```json
-  "scripts": {
-    "dev:worker": "wrangler dev --local",
-    "dev:client": "cd client && vite",
-    "build": "cd client && vite build",
-    "deploy": "bash deploy.sh"
+  {
+    "engines": { "node": ">=22", "pnpm": ">=10" },
+    "scripts": {
+      "dev:worker": "wrangler dev --local",
+      "dev:client": "pnpm --filter client dev",
+      "build": "pnpm --filter client build",
+      "deploy": "bash deploy.sh"
+    }
   }
   ```
 - [ ] `client/` に PWA 依存追加
   ```bash
-  npm install -D vite-plugin-pwa workbox-window
+  pnpm --filter client add -D vite-plugin-pwa workbox-window
   ```
 - [ ] `client/vite.config.ts` に `@vitejs/plugin-react` + `VitePWA` の骨格を追加（詳細は #13）
 - [ ] `tsconfig.json`（ルート）を Workers 用に設定
@@ -74,5 +79,6 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 
 ## 備考
 
-- Node.js 20 LTS 以上を前提とする
+- Node.js 22 LTS + pnpm 10 を前提とする（`.mise.toml` でバージョンを固定）
 - Wrangler v3 系を使用
+- `mise install` を実行してからセットアップを開始すること
