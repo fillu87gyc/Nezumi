@@ -2,6 +2,7 @@
 
 | 項目 | 値 |
 |---|---|
+| Vite | v8 |
 | フェーズ | Phase 4 |
 | ブランチ | `feat/phase4-pwa-config` |
 | 優先度 | P1 |
@@ -32,7 +33,7 @@
 
 ## タスク
 
-- [ ] `client/vite.config.ts` に `VitePWA` 設定を追加
+- [ ] `client/vite.config.ts` に `VitePWA` 設定を追加（Vite v8 の `defineConfig` を使用）
   ```typescript
   VitePWA({
     registerType: 'autoUpdate',

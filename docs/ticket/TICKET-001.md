@@ -36,7 +36,7 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 
 - [ ] mise がインストール済みであることを確認し `.mise.toml` の node/pnpm バージョンを `mise install` で取得
 - [ ] `pnpm create hono@latest .` でルートプロジェクト初期化（カレントディレクトリに展開）
-- [ ] `client/` に `pnpm create vite@latest client -- --template react-ts` 実行
+- [ ] `client/` に `pnpm create vite@8 client -- --template react-ts` 実行
 - [ ] `pnpm-workspace.yaml` で `client` をワークスペースとして宣言（既存ファイル）
 - [ ] ルート `package.json` に engines フィールドとスクリプトを追加
   ```json
@@ -50,9 +50,9 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
     }
   }
   ```
-- [ ] `client/` に PWA 依存追加
+- [ ] `client/` に PWA 依存追加（Vite v8 対応版を明示）
   ```bash
-  pnpm --filter client add -D vite-plugin-pwa workbox-window
+  pnpm --filter client add -D vite@^8 vite-plugin-pwa workbox-window
   ```
 - [ ] `client/vite.config.ts` に `@vitejs/plugin-react` + `VitePWA` の骨格を追加（詳細は #13）
 - [ ] `tsconfig.json`（ルート）を Workers 用に設定
