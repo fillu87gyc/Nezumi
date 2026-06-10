@@ -1,0 +1,129 @@
+.image-swipe {
+  position: relative;
+  background: #111;
+}
+
+.image-swipe-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.image-swipe-track::-webkit-scrollbar {
+  display: none;
+}
+
+.image-swipe-panel {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  position: relative;
+  min-height: 200px;
+}
+
+.swipe-image {
+  width: 100%;
+  display: block;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.bg-image {
+  opacity: 0.25;
+  filter: blur(2px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+}
+
+.overlay-panel {
+  overflow: hidden;
+}
+
+.overlay-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.text-regions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.text-card {
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.trans-text {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.orig-text {
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  margin-top: 0.25rem;
+}
+
+.no-text {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.875rem;
+}
+
+.swipe-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.swipe-dots {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.dot {
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  width: 6px;
+  height: 6px;
+  transition: all 0.2s;
+}
+
+.dot.active {
+  background: #ff4500;
+  width: 16px;
+  border-radius: 3px;
+}

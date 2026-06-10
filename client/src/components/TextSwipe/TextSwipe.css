@@ -1,0 +1,63 @@
+.text-swipe {
+  position: relative;
+}
+
+.text-swipe-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.text-swipe-track::-webkit-scrollbar {
+  display: none;
+}
+
+.text-swipe-panel {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  padding: 0.5rem 0;
+}
+
+.text-swipe-panel.translated {
+  background: var(--surface);
+}
+
+.text-swipe-panel.original {
+  background: var(--surface2);
+}
+
+.lang-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.text-swipe-panel p {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-swipe-dots {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.dot {
+  border-radius: 50%;
+  background: #d0d0d0;
+  width: 6px;
+  height: 6px;
+  transition: all 0.2s;
+}
+
+.dot.active {
+  background: #ff4500;
+  width: 16px;
+  border-radius: 3px;
+}
