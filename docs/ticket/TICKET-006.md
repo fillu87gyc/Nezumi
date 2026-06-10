@@ -40,9 +40,13 @@ Reddit API のレート制限（100 req/分）を回避し、フィードの応�
         return c.json(JSON.parse(cached), 200, { 'X-Cache': 'HIT' })
       }
       await next()
-      const body = await c.res.clone().json()
-      await c.env.KV.put(key, JSON.stringify(body), { expirationTtl: ttl })
-      c.header('X-Cache', 'MISS')
+      // エラーレスポンス（4xx/5xx）はキャッシュしない
+      if (c.res.ok) {
+        const body = await c.res.clone().text()
+        await c.env.KV.put(key, body, { expirationTtl: ttl })
+      }
+      // next() 後は c.header() ではレスポンスに反映されないため c.res.headers を直接操作する
+      c.res.headers.set('X-Cache', 'MISS')
     })
   ```
 - [ ] `src/routes/feed.ts` の各エンドポイントに `kvCache` を適用
@@ -59,13 +63,16 @@ Reddit API のレート制限（100 req/分）を回避し、フィードの応�
 | AC-1 | 初回リクエストで `X-Cache: MISS` ヘッダーが返る | curl |
 | AC-2 | 2 回目の同 URL リクエストで `X-Cache: HIT` ヘッダーが返る | curl |
 | AC-3 | キャッシュヒット時の応答が初回と同一 JSON である | テスト |
-| AC-4 | ttl 経過後にキャッシュが無効化され、再度 MISS になる | ローカルテスト（ttl=5s で確認） |
+| AC-4 | ttl 経過後にキャッシュが無効化され、再度 MISS になる | ローカルテスト（ttl=60s。**KV の `expirationTtl` 最小値は 60 秒**のためそれ未満では検証できない） |
 | AC-5 | POST エンドポイント（認証コールバックなど）にキャッシュが適用されていない | コードレビュー |
+| AC-6 | エラーレスポンス（Reddit API 障害時の 5xx 等）がキャッシュされない | ユニットテスト |
 
 ---
 
 ## 備考
 
-- KV の無料枠は 100,000 reads/日。フィードキャッシュのみで十分余裕がある
-- キャッシュキーにユーザー ID を含めない（フィードはユーザー単位でなく URL 単位でキャッシュ）
+- KV の無料枠は reads 100,000/日・**writes 1,000/日**。単独利用のアクセス頻度なら両方とも余裕がある
+- キャッシュキーにユーザー ID を含めない（**本アプリは Cloudflare Access 配下の単独利用が前提**。
+  複数人で使う構成に変える場合は `/home` と `/subreddits` がユーザー固有データのため、キーに userId を含める必要がある）
 - `after` パラメータが URL に含まれるため、ページネーション単位でキャッシュされる
+- `expirationTtl` は 60 秒未満を指定できない（指定するとエラー）。全エンドポイントの ttl は 60 以上とする

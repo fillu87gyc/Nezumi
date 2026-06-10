@@ -38,7 +38,7 @@ D1 データベーススキーマを設計し、マイグレーションファ�
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  settings TEXT DEFAULT '{}',
+  settings TEXT DEFAULT '{}',  -- フィルター・翻訳設定の JSON（#23 の設定 API が読み書きする）
   created_at INTEGER DEFAULT (unixepoch())
 );
 
@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS read_posts (
   user_id TEXT NOT NULL,
   post_id TEXT NOT NULL,
   read_at INTEGER DEFAULT (unixepoch()),
-  PRIMARY KEY (user_id, post_id)
+  PRIMARY KEY (user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS bookmarks (
@@ -77,7 +78,8 @@ CREATE TABLE IF NOT EXISTS bookmarks (
   post_id TEXT NOT NULL,
   post_data TEXT NOT NULL,  -- JSON
   bookmarked_at INTEGER DEFAULT (unixepoch()),
-  PRIMARY KEY (user_id, post_id)
+  PRIMARY KEY (user_id, post_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ng_words_user ON ng_words(user_id);
@@ -112,3 +114,6 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_id);
 - `match_type` の `regex` は Workers 側で `new RegExp(word, 'i').test(text)` で評価
 - `custom_feeds.subreddits` は JSON 配列文字列（SQLite に JSON 型はないため TEXT で保存）
 - `read_posts` は軽量に保つため定期的な古いレコード削除を検討（Phase 6 以降）
+- 単独利用のため `users` は実質 1 行だが、スキーマは user_id で正規化しておく
+  （Reddit アカウントを将来切り替えてもデータが混ざらない）
+- これらのテーブルへの書き込み API は #23（設定 CRUD API）が担当する

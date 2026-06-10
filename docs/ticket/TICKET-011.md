@@ -5,7 +5,7 @@
 | フェーズ | Phase 3 |
 | ブランチ | `feat/phase3-image-translate-api` |
 | 優先度 | P1 |
-| 依存 | #4, #20 |
+| 依存 | #4 |
 
 ---
 
@@ -21,11 +21,12 @@
 ### In Scope
 - `POST /api/image-translate/translate` — 画像 URL + postId を受け取り翻訳結果を返す
 - `GET /api/image-translate/quota` — OCR レート制限ステータス確認（デバッグ用）
-- KV キャッシュ（`img-trans:{postId}`、7 日 TTL）
+- 画像 URL のホスト許可リスト検証（SSRF 防止）
+- KV キャッシュ（`img-trans:{postId}:{hash(imageUrl)}`、7 日 TTL）
 - `arrayBufferToBase64()` ユーティリティ
 
 ### Out of Scope
-- OCR レート制限（トークンバケット）の実装（→ #20）
+- OCR レート制限（トークンバケット）の実装（→ #20。本チケットが先行し、#20 が後からミドルウェアを差し込む）
 - ImageSwipe UI（→ #12）
 
 ---
@@ -35,8 +36,10 @@
 - [ ] `src/routes/image-translate.ts` を作成し `requireAuth` を適用
 - [ ] `POST /api/image-translate/translate` を実装
   - `{ imageUrl, postId }` を受け取る
-  - KV キャッシュ `img-trans:{postId}` をチェック → ヒット時はそのまま返す
-  - 画像を `fetch(imageUrl)` → `arrayBuffer()` → base64
+  - imageUrl のホストを許可リスト（`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `i.imgur.com`）と照合し、対象外は `400` を返す（SSRF・内部リソース到達の防止）
+  - KV キャッシュ `img-trans:{postId}:{sha256(imageUrl).slice(0,16)}` をチェック → ヒット時はそのまま返す
+    （postId 単独キーだとギャラリー投稿の複数画像でキャッシュが衝突するため imageUrl ハッシュを含める）
+  - 画像を `fetch(imageUrl)` → `arrayBuffer()` → base64（Content-Type ヘッダーから media_type を決定。jpeg/png/webp/gif 以外は `400`。5MB 超は `413`）
   - Claude API (`claude-sonnet-4-20250514`) に vision リクエスト送信
   - プロンプト: テキスト抽出 + 日本語翻訳、JSON 形式指定
   - レスポンスをパース → パース失敗時は `{ hasText: false, ... }` にフォールバック
@@ -54,8 +57,9 @@
 |---|---|---|
 | AC-1 | テキストを含む画像 URL を POST すると `{ hasText: true, translatedText, textRegions }` が返る | ローカルテスト |
 | AC-2 | テキストのない画像を POST すると `{ hasText: false }` が返る | ローカルテスト |
-| AC-3 | 同じ `postId` を2回 POST すると2回目は KV キャッシュから返る（Claude API を呼ばない） | ローカルテスト |
+| AC-3 | 同じ `postId` + `imageUrl` を2回 POST すると2回目は KV キャッシュから返る（Claude API を呼ばない） | ローカルテスト |
 | AC-4 | 画像フェッチが失敗した場合（404 等）は `400 { error: 'Image fetch failed' }` を返す | テスト |
+| AC-8 | 許可リスト外のホスト（例: `http://169.254.169.254/`）を POST すると `400` が返り fetch されない | ユニットテスト |
 | AC-5 | Claude API レスポンスが JSON でなくてもクラッシュしない（フォールバック動作） | テスト |
 | AC-6 | CLAUDE_API_KEY が `c.env.CLAUDE_API_KEY` 経由でのみ参照されている | コードレビュー |
 | AC-7 | `tsc --noEmit` がエラーなく通る | CI |
