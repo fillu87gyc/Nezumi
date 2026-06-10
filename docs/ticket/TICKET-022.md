@@ -45,14 +45,19 @@ PR マージ時に自動でデプロイする GitHub Actions ワークフロー�
   ```
 - [ ] `.github/workflows/ci.yml` を作成
   - トリガー: `pull_request` (main/develop ブランチ)
+  - すべての `uses:` は `@SHA` 形式でピン（タグ不可）
+  - `permissions: contents: read` を明示
   - ジョブ:
     - `typecheck`: `tsc --noEmit`（ルート + client）
     - `lint`: `eslint src/ client/src/`
     - `test`: `vitest run`（テストファイルがある場合）
+    - `audit`: `pnpm audit --audit-level=high`（high 以上で CI 失敗）
 - [ ] `.github/workflows/deploy.yml` を作成
   - トリガー: `push` to `main`
+  - すべての `uses:` は `@SHA` 形式でピン
+  - `permissions: contents: read` を明示（deploy に必要な権限のみ付与）
   - 環境変数: Cloudflare API Token を GitHub Secrets から取得
-  - ジョブ: `pnpm install --frozen-lockfile` → `pnpm build` → `wrangler deploy`
+  - ジョブ: `pnpm install --frozen-lockfile` → `pnpm audit --audit-level=high` → `pnpm build` → `wrangler deploy`
 - [ ] `src/middleware/rateLimit.ts` を作成
   ```typescript
   export const redditRateLimit = createMiddleware<{ Bindings: Env }>(...) // 90 req/min/user

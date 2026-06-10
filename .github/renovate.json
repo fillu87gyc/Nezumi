@@ -4,6 +4,12 @@
   "minimumReleaseAge": "7 days",
   "internalChecksFilter": "strict",
   "schedule": ["every weekend"],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null
+  },
   "packageRules": [
     {
       "matchDepTypes": ["devDependencies"],
@@ -12,6 +18,11 @@
     {
       "matchManagers": ["mise"],
       "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchUpdateTypes": ["pin"],
+      "groupName": "Pin GitHub Actions SHA",
+      "automerge": false
     }
   ]
 }

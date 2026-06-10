@@ -52,3 +52,23 @@ Renovate が自動更新 PR を作成する際、リリースから7日未満の
 
 `.mise.toml` で管理する Node.js・pnpm も同様に1週間ルールを適用する。  
 Renovate の `matchManagers: ["mise"]` で自動更新 PR も同ルールに従う。
+
+---
+
+## サプライチェーン対策一覧
+
+| レイヤー | 対策 | 設定ファイル |
+|---|---|---|
+| バージョン固定 | `save-exact=true` で `^` レンジを禁止 | `.npmrc` |
+| ロックファイル | `pnpm-lock.yaml` をコミット必須 | CI: `--frozen-lockfile` |
+| リリース待機 | 新バージョンを7日間ブロック | `.github/renovate.json` |
+| 脆弱性検知 | OSV DB との照合・自動 PR | `.github/renovate.json` (`osvVulnerabilityAlerts`) |
+| 脆弱性 CI ゲート | `pnpm audit --audit-level=high` で高以上をブロック | `.github/workflows/ci.yml` |
+| PR 差分監視 | 新規追加パッケージの脆弱性・ライセンスを自動チェック | `.github/workflows/dependency-review.yml` |
+| Actions ピン | `uses:` を `@SHA` 形式に固定（タグ書き換え耐性） | 各 workflow ファイル |
+| ライセンス制限 | GPL-2.0 / GPL-3.0 / AGPL-3.0 を依存禁止 | `.github/workflows/dependency-review.yml` |
+
+### 脆弱性アラートの例外
+
+セキュリティ修正パッチは7日ルールの適用外（`vulnerabilityAlerts.minimumReleaseAge: null`）。  
+Renovate が即座に PR を作成するため、レビューを優先して対応すること。
