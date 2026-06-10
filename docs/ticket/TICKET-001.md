@@ -46,10 +46,12 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
       "dev:worker": "wrangler dev --local",
       "dev:client": "pnpm --filter client dev",
       "build": "pnpm --filter client build",
+      "test": "vitest run --passWithNoTests",
       "deploy": "bash deploy.sh"
     }
   }
   ```
+- [ ] `vitest` を devDependency として追加（後続チケットのユニットテスト AC はすべて vitest 前提。`--passWithNoTests` によりテストゼロでも CI が通る）
 - [ ] `client/` に PWA 依存追加（Vite v8 対応版を明示）
   ```bash
   pnpm --filter client add -D vite@^8 vite-plugin-pwa workbox-window
@@ -70,15 +72,18 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 | # | 基準 | 検証方法 |
 |---|---|---|
 | AC-1 | `wrangler dev --local` が起動し `curl localhost:8787/` が `"ok"` を返す | ローカル実行 |
-| AC-2 | `cd client && npm run dev` が起動し `http://localhost:5173` でページが表示される | ブラウザ確認 |
+| AC-2 | `pnpm dev:client` が起動し `http://localhost:5173` でページが表示される | ブラウザ確認 |
 | AC-3 | `tsc --noEmit` がエラーなく通る | CI |
 | AC-4 | `eslint src/ client/src/` がエラーなく通る | CI |
 | AC-5 | `.gitignore` に `node_modules/` と `.wrangler/` が含まれる | コードレビュー |
+| AC-6 | `pnpm test` が（テストゼロの状態で）正常終了する | ローカル実行 |
 
 ---
 
 ## 備考
 
 - Node.js 24 + pnpm 11 を前提とする（`.mise.toml` でバージョンを固定）
-- Wrangler v3 系を使用
+- Wrangler は v4 系を使用（v3 は旧世代。`[assets]` 等の新機能サポートのため v4 を前提とする）
+- Vite v8 / vite-plugin-pwa の組み合わせは着手時点での安定版対応を確認してからバージョンを固定すること（DEPENDENCY_POLICY の7日ルール対象）
+- パッケージ操作はすべて pnpm に統一する（npm コマンドを混在させない）
 - `mise install` を実行してからセットアップを開始すること

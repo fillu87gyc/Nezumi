@@ -38,6 +38,9 @@
 - [ ] `client/src/api/client.ts` を更新
   - 4xx/5xx レスポンスで `Error` を throw
   - 429 の場合は `RateLimitError` をカスタム throw（`retryAfter` フィールド付き）
+  - **Cloudflare Access セッション切れの検知**: API 呼び出しが JSON でないレスポンス
+    （Access のログインページ HTML / IdP へのリダイレクト）を返した場合は `window.location.reload()` で
+    ページ全体を再読み込みし、Access の再認証フローに乗せる（放置すると「謎の JSON パースエラー」として表面化する）
 - [ ] `client/src/components/Feed/Feed.tsx` のエラー状態 UI
   - `useInfiniteQuery` の `isError` 時に「フィード取得に失敗しました」+ 「再試行」ボタン
   - `isFetching` 中にスケルトンローダーを表示（既存実装の強化）
@@ -58,4 +61,5 @@
 | AC-3 | 翻訳 API が失敗しても元テキストが表示される | ブラウザ確認（API を無効化） |
 | AC-4 | 429 エラー時に「レート制限に達しました。{N秒後}に再試行してください」トーストが表示される | ブラウザ確認 |
 | AC-5 | トーストが 3 秒後に自動で消える | ブラウザ確認 |
-| AC-6 | `tsc --noEmit` がエラーなく通る | CI |
+| AC-6 | Access セッション切れ状態で API を叩くとページがリロードされ再認証に遷移する（クラッシュ・無限ループしない） | ブラウザ確認（Access Cookie を削除して再現） |
+| AC-7 | `tsc --noEmit` がエラーなく通る | CI |
