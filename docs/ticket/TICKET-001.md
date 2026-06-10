@@ -41,7 +41,7 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 - [ ] ルート `package.json` に engines フィールドとスクリプトを追加
   ```json
   {
-    "engines": { "node": ">=22", "pnpm": ">=10" },
+    "engines": { "node": ">=24", "pnpm": ">=11" },
     "scripts": {
       "dev:worker": "wrangler dev --local",
       "dev:client": "pnpm --filter client dev",
@@ -79,6 +79,6 @@ Nezumi の開発基盤を整える。Hono on Cloudflare Workers をバックエ�
 
 ## 備考
 
-- Node.js 22 LTS + pnpm 10 を前提とする（`.mise.toml` でバージョンを固定）
+- Node.js 24 + pnpm 11 を前提とする（`.mise.toml` でバージョンを固定）
 - Wrangler v3 系を使用
 - `mise install` を実行してからセットアップを開始すること

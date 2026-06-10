@@ -22,6 +22,7 @@ Hono on Cloudflare Workers をバックエンドとし、React PWA をフロン�
 | レイヤー | 技術 |
 |---|---|
 | Frontend | React 18 + Vite v8 + vite-plugin-pwa |
+| Runtime | Node.js 24 + pnpm 11（mise で固定） |
 | Backend | Hono on Cloudflare Workers |
 | Storage | Cloudflare KV（キャッシュ・トークン）+ D1（ユーザーデータ）|
 | 翻訳 | DeepL API（テキスト）+ Claude API vision（画像 OCR + 翻訳）|
