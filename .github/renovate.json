@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
+  "schedule": ["every weekend"],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchManagers": ["mise"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchUpdateTypes": ["pin"],
+      "groupName": "Pin GitHub Actions SHA",
+      "automerge": false
+    }
+  ]
+}

@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reddit JP Client — Interactive Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0d0f;
+    --surface:   #18181c;
+    --surface2:  #22222a;
+    --border:    #2e2e38;
+    --accent:    #ff4500;
+    --accent2:   #ff6534;
+    --text:      #e8e8ec;
+    --text2:     #9090a0;
+    --text3:     #5a5a70;
+    --green:     #46d160;
+    --blue:      #4a9eff;
+    --radius:    14px;
+    --phone-w:   390px;
+    --phone-h:   780px;
+  }
+
+  body {
+    background: #07070a;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+    gap: 32px;
+  }
+
+  /* ─── header ─── */
+  .page-header {
+    text-align: center;
+    max-width: 600px;
+  }
+  .page-header h1 {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: var(--text3);
+    line-height: 1.6;
+  }
+
+  /* ─── flow diagram ─── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 720px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .flow-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .flow-node:hover, .flow-node.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,69,0,.08);
+  }
+  .flow-arrow { color: var(--text3); font-size: 14px; }
+
+  /* ─── phone shell ─── */
+  .demo-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .phone-shell {
+    width: var(--phone-w);
+    height: var(--phone-h);
+    background: #0a0a0e;
+    border: 1.5px solid #333340;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 1px #1a1a24,
+      0 40px 80px rgba(0,0,0,.8),
+      inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .phone-notch {
+    position: absolute;
+    top: 12px; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #0a0a0e;
+    border-radius: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .phone-notch::before {
+    content: '';
+    width: 10px; height: 10px;
+    background: #1a1a24;
+    border-radius: 50%;
+  }
+  .phone-notch::after {
+    content: '';
+    width: 70px; height: 6px;
+    background: #1a1a24;
+    border-radius: 4px;
+  }
+
+  /* ─── screen container ─── */
+  .screen-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(30px);
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+
+  /* ─── status bar ─── */
+  .status-bar {
+    height: 52px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text2);
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 50;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* ─── nav bar ─── */
+  .nav-bar {
+    position: sticky;
+    bottom: 0;
+    background: rgba(13,13,15,.92);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 20px;
+    z-index: 50;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 4px 16px;
+    border-radius: 10px;
+    transition: color .15s;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* ─── top bar ─── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px 12px;
+    gap: 10px;
+  }
+  .top-bar-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .top-bar-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+  }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* ─── chip tabs ─── */
+  .chip-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    transition: all .15s;
+  }
+  .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* ─── feed card ─── */
+  .feed-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin: 0 12px 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .feed-card:hover { border-color: #444455; }
+  .feed-card:active { opacity: .9; }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px 0;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .card-subreddit {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .card-dot { width: 3px; height: 3px; background: var(--text3); border-radius: 50%; }
+
+  /* text swipe */
+  .text-swipe-wrap {
+    position: relative;
+  }
+  .text-swipe {
+    display: flex;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .text-swipe::-webkit-scrollbar { display: none; }
+  .text-panel {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    padding: 8px 14px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .text-panel.en { color: var(--text2); font-size: 12px; font-weight: 400; }
+  .swipe-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 4px 0;
+  }
+  .s-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all .2s;
+  }
+  .s-dot.active {
+    background: var(--accent);
+    width: 12px;
+    border-radius: 3px;
+  }
+  .lang-badge {
+    position: absolute;
+    top: 8px; right: 14px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* image swipe */
+  .img-swipe {
+    display: flex;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: 0;
+  }
+  .img-swipe::-webkit-scrollbar { display: none; }
+  .img-panel {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    position: relative;
+  }
+  .img-panel img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+  .img-panel-translate {
+    width: 100%;
+    height: 200px;
+    background: #0a0a12;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+  }
+  .translate-overlay-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    text-align: center;
+  }
+  .translate-original {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .translate-badge {
+    position: absolute;
+    bottom: 8px; right: 8px;
+    background: rgba(255,69,0,.85);
+    color: #fff;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 14px 10px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .card-score {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .card-comments {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .card-time { margin-left: auto; }
+
+  /* ─── post detail ─── */
+  .post-detail-header {
+    padding: 8px 14px 12px;
+  }
+  .post-detail-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .post-detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .post-detail-body {
+    padding: 0 14px 14px;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+  .comment {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .comment-author { color: var(--blue); font-weight: 500; }
+  .comment-body {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .comment-body.ja { color: var(--text); }
+  .comment-body.en { color: var(--text3); font-size: 12px; margin-top: 4px; }
+  .comment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .comment-nested {
+    margin-left: 16px;
+    border-left: 2px solid var(--border);
+    padding-left: 12px;
+  }
+
+  /* ─── notification screen ─── */
+  .notif-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .notif-item.unread { background: rgba(255,69,0,.04); }
+  .notif-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .notif-content { flex: 1; }
+  .notif-title { font-size: 13px; color: var(--text); line-height: 1.4; margin-bottom: 3px; }
+  .notif-sub { font-size: 11px; color: var(--text3); }
+  .notif-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  /* ─── settings screen ─── */
+  .settings-section {
+    padding: 16px 16px 8px;
+  }
+  .settings-section-title {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text3);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 6px;
+  }
+  .settings-label { font-size: 13px; color: var(--text); }
+  .settings-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .toggle {
+    width: 44px; height: 26px;
+    border-radius: 13px;
+    background: var(--accent);
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle.off { background: var(--surface2); border: 1px solid var(--border); }
+  .toggle::after {
+    content: '';
+    width: 20px; height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px; right: 3px;
+    transition: right .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+  .toggle.off::after { right: auto; left: 3px; }
+  .ng-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .ng-tag {
+    background: rgba(255,69,0,.12);
+    border: 1px solid rgba(255,69,0,.3);
+    color: var(--accent2);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff4500, #ff8c00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* ─── login screen ─── */
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 32px;
+    gap: 24px;
+    text-align: center;
+  }
+  .logo-mark {
+    width: 72px; height: 72px;
+    background: var(--accent);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 38px;
+    box-shadow: 0 8px 32px rgba(255,69,0,.4);
+  }
+  .login-title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: var(--text3);
+    line-height: 1.6;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  .feature-icon { font-size: 20px; }
+  .feature-label { font-size: 13px; color: var(--text); }
+  .feature-desc { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  /* ─── loading spinner ─── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ─── breadcrumb nav ─── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .breadcrumb span { color: var(--text2); }
+
+  /* ─── screen nav buttons below phone ─── */
+  .screen-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: var(--phone-w);
+  }
+  .screen-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .screen-btn:hover, .screen-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,69,0,.08);
+  }
+
+  @media (max-width: 430px) {
+    :root { --phone-w: 360px; --phone-h: 720px; }
+    body { padding: 24px 12px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Reddit JP Client — Screen Flow</h1>
+  <p>下のボタンで画面を切り替え。フィード画面では投稿をタップして詳細へ。スワイプUIも体験できます。</p>
+</div>
+
+<!-- flow diagram -->
+<div class="flow">
+  <div class="flow-node active" onclick="showScreen('login')">ログイン</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-node" onclick="showScreen('feed')">フィード</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-node" onclick="showScreen('post')">投稿詳細</div>
+  <div class="flow-arrow">↕</div>
+  <div class="flow-node" onclick="showScreen('notify')">通知</div>
+  <div class="flow-arrow">↕</div>
+  <div class="flow-node" onclick="showScreen('settings')">設定</div>
+</div>
+
+<!-- phone -->
+<div class="demo-wrap">
+  <div class="phone-shell">
+    <div class="phone-notch"></div>
+    <div class="screen-container">
+
+      <!-- ══ LOGIN ══ -->
+      <div class="screen active" id="screen-login">
+        <div class="login-screen">
+          <div class="logo-mark">🦊</div>
+          <div>
+            <div class="login-title">Reddit JP<br>クライアント</div>
+          </div>
+          <div class="login-sub">広告なし。アルゴリズムなし。<br>フィードはすべて日本語で届く。</div>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon">🇯🇵</div>
+              <div>
+                <div class="feature-label">自動日本語翻訳</div>
+                <div class="feature-desc">タイトル・本文・画像まで翻訳</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">↔️</div>
+              <div>
+                <div class="feature-label">スワイプで原文切り替え</div>
+                <div class="feature-desc">左右スワイプで原文↔翻訳</div>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">🔕</div>
+              <div>
+                <div class="feature-label">完全カスタムフィルター</div>
+                <div class="feature-desc">NGワード・スコア・subreddit</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="showScreen('feed')">Reddit アカウントでログイン</button>
+        </div>
+      </div>
+
+      <!-- ══ FEED ══ -->
+      <div class="screen" id="screen-feed">
+        <div class="status-bar">
+          <span style="font-size:13px">9:41</span>
+          <div class="status-icons">
+            <span>●●●</span>
+            <span>WiFi</span>
+            <span>🔋</span>
+          </div>
+        </div>
+        <div class="top-bar">
+          <div class="avatar">F</div>
+          <div class="top-bar-title">
+            ホーム
+            <div class="top-bar-sub">29件 · 更新済み</div>
+          </div>
+          <button class="icon-btn">🔍</button>
+          <button class="icon-btn" onclick="showScreen('settings')">⚙️</button>
+        </div>
+        <div class="chip-row">
+          <div class="chip active">ホット</div>
+          <div class="chip">新着</div>
+          <div class="chip">トップ</div>
+          <div class="chip">r/programming</div>
+          <div class="chip">r/worldnews</div>
+          <div class="chip">r/todayilearned</div>
+        </div>
+
+        <!-- card 1: text+image -->
+        <div class="feed-card" onclick="showScreen('post')">
+          <div class="card-meta">
+            <span class="card-subreddit">r/programming</span>
+            <div class="card-dot"></div>
+            <span>u/rustacean_dev</span>
+            <div class="card-dot"></div>
+            <span>3時間前</span>
+          </div>
+          <div class="text-swipe-wrap">
+            <div class="text-swipe" id="ts1" onscroll="updateDots('ts1','d1')">
+              <div class="text-panel">Rustのコンパイラが2.3倍高速化 — 並列フロントエンド処理の詳細解説</div>
+              <div class="text-panel en">Rust compiler is 2.3× faster with parallel frontend — here's how it works under the hood</div>
+            </div>
+            <div class="lang-badge" id="lb1">🇯🇵 JA</div>
+            <div class="swipe-dots" id="d1">
+              <div class="s-dot active"></div>
+              <div class="s-dot"></div>
+            </div>
+          </div>
+          <!-- image swipe -->
+          <div class="img-swipe" id="is1" onscroll="updateImgDots('is1','id1')">
+            <div class="img-panel">
+              <img src="https://picsum.photos/seed/rust1/390/200" alt="">
+            </div>
+            <div class="img-panel">
+              <div class="img-panel-translate">
+                <div class="translate-overlay-text">並列フロントエンドにより<br>コンパイル時間が大幅短縮。<br>マクロ展開が同時処理可能に。</div>
+                <div class="translate-original">Parallel frontend enables simultaneous macro expansion across crates.</div>
+                <div class="translate-badge">Claude Vision</div>
+              </div>
+            </div>
+          </div>
+          <div class="swipe-dots" id="id1" style="padding:6px 0 4px; background:var(--surface);">
+            <div class="s-dot active"></div>
+            <div class="s-dot"></div>
+          </div>
+          <div class="card-actions">
+            <div class="card-score">▲ 4.2k</div>
+            <div class="card-comments">💬 318</div>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <span>🔖</span><span>↗️</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- card 2: text only -->
+        <div class="feed-card" onclick="showScreen('post')">
+          <div class="card-meta">
+            <span class="card-subreddit">r/worldnews</span>
+            <div class="card-dot"></div>
+            <span>u/global_watcher</span>
+            <div class="card-dot"></div>
+            <span>1時間前</span>
+          </div>
+          <div class="text-swipe-wrap">
+            <div class="text-swipe" id="ts2" onscroll="updateDots('ts2','d2')">
+              <div class="text-panel">EU、AIコンテンツに対する新たな透明性ルールを承認 — 2026年末から施行</div>
+              <div class="text-panel en">EU approves new transparency rules for AI-generated content, effective end of 2026</div>
+            </div>
+            <div class="lang-badge" id="lb2">🇯🇵 JA</div>
+            <div class="swipe-dots" id="d2">
+              <div class="s-dot active"></div>
+              <div class="s-dot"></div>
+            </div>
+          </div>
+          <div class="card-actions">
+            <div class="card-score">▲ 12.1k</div>
+            <div class="card-comments">💬 892</div>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <span>🔖</span><span>↗️</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- card 3: skeleton loading -->
+        <div class="feed-card" style="padding:12px 14px;">
+          <div class="skeleton" style="height:11px;width:120px;margin-bottom:10px;"></div>
+          <div class="skeleton" style="height:15px;width:90%;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:15px;width:70%;margin-bottom:12px;"></div>
+          <div class="skeleton" style="height:160px;width:100%;margin-bottom:10px;border-radius:8px;"></div>
+          <div class="skeleton" style="height:11px;width:80px;"></div>
+        </div>
+
+        <div style="height:8px;"></div>
+        <div class="nav-bar">
+          <div class="nav-item active"><div class="nav-icon">🏠</div><span>ホーム</span></div>
+          <div class="nav-item" onclick="showScreen('feed')"><div class="nav-icon">🔍</div><span>検索</span></div>
+          <div class="nav-item" onclick="showScreen('notify')"><div class="nav-icon">🔔</div><span>通知</span></div>
+          <div class="nav-item" onclick="showScreen('settings')"><div class="nav-icon">👤</div><span>プロフィール</span></div>
+        </div>
+      </div>
+
+      <!-- ══ POST DETAIL ══ -->
+      <div class="screen" id="screen-post">
+        <div class="status-bar">
+          <span style="font-size:13px">9:43</span>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="top-bar">
+          <button class="icon-btn" onclick="showScreen('feed')">←</button>
+          <div class="top-bar-title">
+            <div class="breadcrumb">
+              <span onclick="showScreen('feed')" style="cursor:pointer;color:var(--accent);">ホーム</span>
+              <span>›</span>
+              <span>r/programming</span>
+            </div>
+          </div>
+          <button class="icon-btn">↗️</button>
+        </div>
+
+        <div class="post-detail-header">
+          <div class="text-swipe-wrap">
+            <div class="text-swipe" id="ts-detail" onscroll="updateDots('ts-detail','d-detail')">
+              <div class="text-panel" style="font-size:16px;font-weight:700;padding:0 0 8px;">
+                Rustのコンパイラが2.3倍高速化 — 並列フロントエンド処理の詳細解説
+              </div>
+              <div class="text-panel en" style="padding:0 0 8px;">
+                Rust compiler is 2.3× faster with parallel frontend — here's how it works
+              </div>
+            </div>
+            <div class="swipe-dots" id="d-detail" style="padding:4px 0 8px;">
+              <div class="s-dot active"></div>
+              <div class="s-dot"></div>
+            </div>
+          </div>
+          <div class="post-detail-meta">
+            <span class="card-subreddit">r/programming</span>
+            <div class="card-dot"></div>
+            <span>u/rustacean_dev</span>
+            <div class="card-dot"></div>
+            <span>3時間前</span>
+          </div>
+        </div>
+
+        <!-- image swipe in detail -->
+        <div class="img-swipe" id="is-detail" onscroll="updateImgDots('is-detail','id-detail')">
+          <div class="img-panel">
+            <img src="https://picsum.photos/seed/rust1/390/200" alt="">
+          </div>
+          <div class="img-panel">
+            <div class="img-panel-translate">
+              <div class="translate-overlay-text">並列フロントエンドにより<br>コンパイル時間が大幅短縮。<br>マクロ展開が同時処理可能に。</div>
+              <div class="translate-original">Parallel frontend enables simultaneous macro expansion across crates.</div>
+              <div class="translate-badge">Claude Vision</div>
+            </div>
+          </div>
+        </div>
+        <div class="swipe-dots" id="id-detail" style="padding:6px 0 4px; background:var(--bg);">
+          <div class="s-dot active"></div>
+          <div class="s-dot"></div>
+        </div>
+
+        <div class="post-detail-body">
+          Rustチームは本日、コンパイラの新しい並列フロントエンド実装を発表しました。
+          これにより、大規模プロジェクトでのコンパイル時間が平均2.3倍短縮されます。
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- actions bar -->
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:13px;color:var(--accent);border-right:1px solid var(--border);">
+            ▲ <span style="font-family:'JetBrains Mono',monospace;">4.2k</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:13px;color:var(--text2);border-right:1px solid var(--border);">
+            ▼
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:13px;color:var(--text2);border-right:1px solid var(--border);">
+            💬 <span style="font-family:'JetBrains Mono',monospace;font-size:12px;">318</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px;font-size:13px;color:var(--text2);">
+            🔖
+          </div>
+        </div>
+
+        <!-- comments -->
+        <div style="padding:10px 16px 4px;">
+          <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:.08em;">COMMENTS · 318</div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-meta">
+            <span class="comment-author">u/ferris_the_crab</span>
+            <div class="card-dot"></div>
+            <span>2時間前</span>
+            <span style="margin-left:auto;color:var(--accent);font-family:'JetBrains Mono',monospace;">▲ 1.2k</span>
+          </div>
+          <div class="comment-body ja">ついにきた。大規模プロジェクトでのビルド待ち時間が本当に辛かったので、これは嬉しい。</div>
+          <div class="comment-body en">Finally. Large project build times were genuinely painful, so this is welcome.</div>
+          <div class="comment-actions">
+            <span>↩️ 返信</span>
+            <span>▲ 1.2k</span>
+          </div>
+          <div class="comment-nested" style="margin-top:8px;">
+            <div class="comment-meta">
+              <span class="comment-author">u/rustacean_dev</span>
+              <div class="card-dot"></div>
+              <span>1時間前</span>
+            </div>
+            <div class="comment-body ja">私のプロジェクトでは60秒→26秒になりました！</div>
+            <div class="comment-body en">My project went from 60s to 26s!</div>
+          </div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-meta">
+            <span class="comment-author">u/async_await</span>
+            <div class="card-dot"></div>
+            <span>1時間前</span>
+          </div>
+          <div class="comment-body ja">並列化の恩恵を受けるにはどのフラグが必要ですか？</div>
+          <div class="comment-body en">What flags do I need to enable to benefit from parallelization?</div>
+          <div class="comment-actions">
+            <span>↩️ 返信</span>
+            <span>▲ 340</span>
+          </div>
+        </div>
+
+        <div style="height:20px;"></div>
+        <div class="nav-bar">
+          <div class="nav-item" onclick="showScreen('feed')"><div class="nav-icon">🏠</div><span>ホーム</span></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><span>検索</span></div>
+          <div class="nav-item" onclick="showScreen('notify')"><div class="nav-icon">🔔</div><span>通知</span></div>
+          <div class="nav-item"><div class="nav-icon">👤</div><span>プロフィール</span></div>
+        </div>
+      </div>
+
+      <!-- ══ NOTIFICATIONS ══ -->
+      <div class="screen" id="screen-notify">
+        <div class="status-bar">
+          <span style="font-size:13px">9:45</span>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="top-bar">
+          <div class="top-bar-title">通知 <span style="font-size:12px;color:var(--accent);font-family:'JetBrains Mono',monospace;">3</span></div>
+          <button class="icon-btn">✓</button>
+        </div>
+
+        <div class="notif-item unread" onclick="showScreen('post')">
+          <div class="notif-icon">💬</div>
+          <div class="notif-content">
+            <div class="notif-title">あなたのコメントに返信がありました</div>
+            <div class="notif-sub">u/ferris_the_crab · r/programming · 2分前</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+
+        <div class="notif-item unread" onclick="showScreen('post')">
+          <div class="notif-icon">▲</div>
+          <div class="notif-content">
+            <div class="notif-title">投稿が 1,000 upvotes を突破しました</div>
+            <div class="notif-sub">r/rust · 15分前</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+
+        <div class="notif-item unread">
+          <div class="notif-icon">📬</div>
+          <div class="notif-content">
+            <div class="notif-title">新しいダイレクトメッセージ</div>
+            <div class="notif-sub">u/async_await · 32分前</div>
+          </div>
+          <div class="notif-dot"></div>
+        </div>
+
+        <div class="notif-item">
+          <div class="notif-icon">🏆</div>
+          <div class="notif-content">
+            <div class="notif-title">あなたの投稿がアワードを受け取りました</div>
+            <div class="notif-sub">r/programming · 2時間前</div>
+          </div>
+        </div>
+
+        <div class="notif-item">
+          <div class="notif-icon">💬</div>
+          <div class="notif-content">
+            <div class="notif-title">あなたの投稿に新しいコメント</div>
+            <div class="notif-sub">u/global_watcher · r/worldnews · 4時間前</div>
+          </div>
+        </div>
+
+        <div class="nav-bar">
+          <div class="nav-item" onclick="showScreen('feed')"><div class="nav-icon">🏠</div><span>ホーム</span></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><span>検索</span></div>
+          <div class="nav-item active"><div class="nav-icon">🔔</div><span>通知</span></div>
+          <div class="nav-item" onclick="showScreen('settings')"><div class="nav-icon">👤</div><span>プロフィール</span></div>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div class="screen" id="screen-settings">
+        <div class="status-bar">
+          <span style="font-size:13px">9:46</span>
+          <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+        </div>
+        <div class="top-bar">
+          <button class="icon-btn" onclick="showScreen('feed')">←</button>
+          <div class="top-bar-title">設定</div>
+        </div>
+
+        <!-- profile -->
+        <div style="display:flex;align-items:center;gap:14px;padding:8px 16px 16px;">
+          <div class="avatar" style="width:52px;height:52px;font-size:22px;border-radius:16px;">F</div>
+          <div>
+            <div style="font-size:15px;font-weight:600;">u/fill_dev</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px;">karma 4,821</div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">翻訳</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">フィード自動翻訳</div>
+              <div class="settings-sub">タイトル・本文をDeepLで翻訳</div>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">画像翻訳（オンデマンド）</div>
+              <div class="settings-sub">スワイプ時にClaude Visionで翻訳</div>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">コメントも翻訳</div>
+              <div class="settings-sub">上位コメントを自動翻訳</div>
+            </div>
+            <div class="toggle off" onclick="this.classList.toggle('off')"></div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">フィルター</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">NSFWを非表示</div>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">最低スコア: 50</div>
+              <div class="settings-sub">これ以下の投稿を非表示</div>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);">50 ›</span>
+          </div>
+          <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div class="settings-label">NGワード</div>
+            <div class="ng-tags">
+              <div class="ng-tag">crypto</div>
+              <div class="ng-tag">NFT</div>
+              <div class="ng-tag">clickbait</div>
+              <div class="ng-tag">+ 追加</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">通知</div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">プッシュ通知</div>
+              <div class="settings-sub">返信・メンション・メッセージ</div>
+            </div>
+            <div class="toggle" onclick="this.classList.toggle('off')"></div>
+          </div>
+        </div>
+
+        <div style="height:20px;"></div>
+        <div class="nav-bar">
+          <div class="nav-item" onclick="showScreen('feed')"><div class="nav-icon">🏠</div><span>ホーム</span></div>
+          <div class="nav-item"><div class="nav-icon">🔍</div><span>検索</span></div>
+          <div class="nav-item" onclick="showScreen('notify')"><div class="nav-icon">🔔</div><span>通知</span></div>
+          <div class="nav-item active"><div class="nav-icon">👤</div><span>プロフィール</span></div>
+        </div>
+      </div>
+
+    </div><!-- /screen-container -->
+  </div><!-- /phone-shell -->
+
+  <div class="screen-nav">
+    <div class="screen-btn active" id="btn-login" onclick="showScreen('login')">🔐 ログイン</div>
+    <div class="screen-btn" id="btn-feed" onclick="showScreen('feed')">🏠 フィード</div>
+    <div class="screen-btn" id="btn-post" onclick="showScreen('post')">📄 投稿詳細</div>
+    <div class="screen-btn" id="btn-notify" onclick="showScreen('notify')">🔔 通知</div>
+    <div class="screen-btn" id="btn-settings" onclick="showScreen('settings')">⚙️ 設定</div>
+  </div>
+</div>
+
+<script>
+const screens = ['login','feed','post','notify','settings']
+
+function showScreen(name) {
+  screens.forEach(s => {
+    const el = document.getElementById('screen-' + s)
+    const btn = document.getElementById('btn-' + s)
+    if (el) el.classList.toggle('active', s === name)
+    if (btn) btn.classList.toggle('active', s === name)
+  })
+  // flow nodes
+  document.querySelectorAll('.flow-node').forEach(n => {
+    n.classList.toggle('active', n.textContent.trim().includes(
+      { login:'ログイン', feed:'フィード', post:'投稿詳細', notify:'通知', settings:'設定' }[name]
+    ))
+  })
+  // scroll to top
+  const active = document.getElementById('screen-' + name)
+  if (active) active.scrollTop = 0
+}
+
+function updateDots(swipeId, dotsId) {
+  const swipe = document.getElementById(swipeId)
+  const dots = document.getElementById(dotsId)
+  if (!swipe || !dots) return
+  const idx = Math.round(swipe.scrollLeft / swipe.clientWidth)
+  const label = swipe.closest('.text-swipe-wrap')?.querySelector('[id^="lb"]')
+  dots.querySelectorAll('.s-dot').forEach((d, i) => d.classList.toggle('active', i === idx))
+  if (label) label.textContent = idx === 0 ? '🇯🇵 JA' : '🇺🇸 EN'
+}
+
+function updateImgDots(swipeId, dotsId) {
+  const swipe = document.getElementById(swipeId)
+  const dots = document.getElementById(dotsId)
+  if (!swipe || !dots) return
+  const idx = Math.round(swipe.scrollLeft / swipe.clientWidth)
+  dots.querySelectorAll('.s-dot').forEach((d, i) => d.classList.toggle('active', i === idx))
+}
+</script>
+</body>
+</html>
