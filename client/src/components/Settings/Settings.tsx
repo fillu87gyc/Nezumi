@@ -1,26 +1,78 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { subscribePushNotifications } from '../../hooks/usePushNotification'
+import { apiFetch } from '../../api/client'
 import './Settings.css'
+
+interface NgWord {
+  id: number
+  word: string
+  matchType: string
+  target: string
+}
+
+interface SettingsResponse {
+  filter: { minScore: number; minComments: number; filterNsfw: boolean }
+  ngWords: NgWord[]
+}
 
 export default function Settings() {
   const {
     autoTranslate, setAutoTranslate,
     translateImages, setTranslateImages,
     translateComments, setTranslateComments,
-    minScore, setMinScore,
-    minComments, setMinComments,
-    filterNsfw, setFilterNsfw,
-    ngWords, addNgWord, removeNgWord,
     pushEnabled, setPushEnabled,
   } = useSettingsStore()
 
   const [ngInput, setNgInput] = useState('')
+  const [minScore, setMinScore] = useState(0)
+  const [minComments, setMinComments] = useState(0)
+  const [filterNsfw, setFilterNsfw] = useState(false)
+  const qc = useQueryClient()
+
+  const { data } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => apiFetch<SettingsResponse>('/api/settings'),
+  })
+
+  useEffect(() => {
+    if (data) {
+      setMinScore(data.filter.minScore)
+      setMinComments(data.filter.minComments)
+      setFilterNsfw(data.filter.filterNsfw)
+    }
+  }, [data])
+
+  const filterMutation = useMutation({
+    mutationFn: (body: { minScore?: number; minComments?: number; filterNsfw?: boolean }) =>
+      apiFetch('/api/settings/filter', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
+  })
+
+  const addNgWordMutation = useMutation({
+    mutationFn: (word: string) =>
+      apiFetch('/api/settings/ng-words', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
+  })
+
+  const deleteNgWordMutation = useMutation({
+    mutationFn: (id: number) => fetch(`/api/settings/ng-words/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['settings'] }),
+  })
 
   const handleAddNgWord = () => {
     const word = ngInput.trim()
     if (word) {
-      addNgWord(word)
+      addNgWordMutation.mutate(word)
       setNgInput('')
     }
   }
@@ -58,14 +110,25 @@ export default function Settings() {
         <h3 className="section-title">フィルター</h3>
         <label className="toggle-row">
           <span>NSFW 非表示</span>
-          <input type="checkbox" checked={filterNsfw} onChange={(e) => setFilterNsfw(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={filterNsfw}
+            onChange={(e) => {
+              setFilterNsfw(e.target.checked)
+              filterMutation.mutate({ filterNsfw: e.target.checked })
+            }}
+          />
         </label>
         <div className="slider-row">
           <span>最低スコア: {minScore}</span>
           <input
             type="range" min={0} max={1000} step={10}
             value={minScore}
-            onChange={(e) => setMinScore(Number(e.target.value))}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              setMinScore(v)
+              filterMutation.mutate({ minScore: v })
+            }}
           />
         </div>
         <div className="slider-row">
@@ -73,7 +136,11 @@ export default function Settings() {
           <input
             type="range" min={0} max={200} step={1}
             value={minComments}
-            onChange={(e) => setMinComments(Number(e.target.value))}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              setMinComments(v)
+              filterMutation.mutate({ minComments: v })
+            }}
           />
         </div>
       </section>
@@ -92,10 +159,10 @@ export default function Settings() {
           <button className="ng-add-btn" onClick={handleAddNgWord}>追加</button>
         </div>
         <div className="ng-tags">
-          {ngWords.map((word) => (
-            <span key={word} className="ng-tag">
-              {word}
-              <button className="ng-remove" onClick={() => removeNgWord(word)}>×</button>
+          {(data?.ngWords ?? []).map((item) => (
+            <span key={item.id} className="ng-tag">
+              {item.word}
+              <button className="ng-remove" onClick={() => deleteNgWordMutation.mutate(item.id)}>×</button>
             </span>
           ))}
         </div>

@@ -61,16 +61,17 @@ test('NGワードの追加・削除がリアルタイムに反映され、リロ
 
   await page.locator('.ng-input').fill('kitsune')
   await page.locator('.ng-add-btn').click()
-  await expect(page.locator('.ng-tag')).toHaveCount(2)
+  // D1 には setup でシードされた FILTERME が既にある (合計 3 件)
+  await expect(page.locator('.ng-tag')).toHaveCount(3)
 
   await capture(page, {
     id: '11-ngword-tags',
-    tickets: [18],
+    tickets: [18, 23],
     title: 'NGワード管理',
-    desc: 'NGワードをテキスト入力 + Enter / 追加ボタンで登録でき、タグとして一覧表示される。',
+    desc: 'NGワードをテキスト入力 + Enter / 追加ボタンで登録でき、タグとして一覧表示される。D1 に永続化される。',
   })
 
-  // リロードしても保持される（zustand persist → localStorage）
+  // リロードしても保持される（D1 API 経由）
   await page.reload()
   await page.locator('.nav-item', { hasText: '設定' }).click()
   await expect(page.locator('.ng-tag', { hasText: 'tanuki' })).toBeVisible()
@@ -82,21 +83,33 @@ test('NGワードの追加・削除がリアルタイムに反映され、リロ
   await expect(page.locator('.ng-tag', { hasText: 'kitsune' })).toHaveCount(1)
 })
 
-test('フィルタースライダー（最低スコア・最低コメント数）が操作に追従する', async ({ page }) => {
+test('フィルタースライダー（最低スコア・最低コメント数）が操作に追従する', async ({ page, request }) => {
   await gotoSettings(page)
 
   const scoreRow = page.locator('.slider-row', { hasText: '最低スコア' })
+  // PATCH が D1 に到達するのを確実に待つため、応答を先に登録してから操作する
+  const scorePatchDone = page.waitForResponse(
+    (r) => r.url().includes('/api/settings/filter') && r.request().method() === 'PATCH'
+  )
   await scoreRow.locator('input[type=range]').fill('500')
   await expect(scoreRow).toContainText('最低スコア: 500')
+  await scorePatchDone
 
   const commentsRow = page.locator('.slider-row', { hasText: '最低コメント数' })
+  const commentsPatchDone = page.waitForResponse(
+    (r) => r.url().includes('/api/settings/filter') && r.request().method() === 'PATCH'
+  )
   await commentsRow.locator('input[type=range]').fill('42')
   await expect(commentsRow).toContainText('最低コメント数: 42')
+  await commentsPatchDone
 
   // リロード後も保持
   await page.reload()
   await page.locator('.nav-item', { hasText: '設定' }).click()
   await expect(page.locator('.slider-row', { hasText: '最低スコア' })).toContainText('最低スコア: 500')
+
+  // 後続テストのフィード API に影響しないよう D1 を元に戻す
+  await request.patch('/api/settings/filter', { data: { minScore: 5, minComments: 0 } })
 })
 
 test('プッシュ通知トグルを操作してもクラッシュしない', async ({ page }) => {

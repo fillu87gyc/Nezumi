@@ -52,7 +52,7 @@ setup('OAuth ログイン → セッション保存 → D1 フィルター設定
   await context.storageState({ path: STORAGE_STATE })
 
   // ログインで D1 に作成された users 行へフィルター設定をシードする（#16/#17）。
-  // 書き込み API は未実装（チケット #23）のため、E2E では D1 を直接シードする。
+  // D1 を直接シードすることで、セットアップ時点での API 依存を避ける。
   d1Execute(
     `UPDATE users SET settings = '{"minScore":5,"minComments":0,"filterNsfw":true}' WHERE id = 'u_alice'`
   )

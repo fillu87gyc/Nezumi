@@ -1,0 +1,124 @@
+.post-detail {
+  padding: 0 1rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-accent, #ff4500);
+  font-size: 1rem;
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.post-detail-card {
+  background: var(--color-card, #1a1a1b);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.post-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-muted, #818384);
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.post-detail-title h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.post-detail-image img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 0.75rem 0;
+}
+
+.post-detail-body {
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text, #d7dadc);
+}
+
+.post-detail-body p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.post-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-muted, #818384);
+}
+
+.post-detail-actions .reddit-link {
+  color: var(--color-accent, #ff4500);
+  text-decoration: none;
+  margin-left: auto;
+}
+
+.comments-section {
+  margin-top: 1rem;
+}
+
+.comments-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--color-text, #d7dadc);
+}
+
+.no-comments {
+  color: var(--color-muted, #818384);
+  font-size: 0.9rem;
+}
+
+.comment {
+  border-left: 2px solid var(--color-border, #343536);
+  padding: 0.5rem 0 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.comment-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--color-muted, #818384);
+  margin-bottom: 0.25rem;
+}
+
+.comment-author {
+  color: var(--color-text-dim, #d7dadc);
+  font-weight: 600;
+}
+
+.comment-body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text, #d7dadc);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.comment-replies {
+  margin-top: 0.25rem;
+}
+
+.post-detail-loading,
+.post-detail-error {
+  padding: 1rem 0;
+}

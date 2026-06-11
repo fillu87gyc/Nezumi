@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import Feed from './components/Feed/Feed'
 import Settings from './components/Settings/Settings'
+import PostDetail from './components/PostDetail/PostDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastContainer, showToast } from './components/Toast/Toast'
 import { RateLimitError } from './api/client'
@@ -20,10 +21,11 @@ queryClient.getQueryCache().config.onError = (err) => {
   }
 }
 
-type Page = 'feed' | 'settings'
+type Page = 'feed' | 'settings' | 'post-detail'
 
 export default function App() {
   const [page, setPage] = useState<Page>('feed')
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null)
   // session Cookie は httpOnly で document.cookie に現れないため、
   // サーバーが併設する非 httpOnly の logged_in Cookie で判定する
   const [isLoggedIn] = useState<boolean>(() => {
@@ -53,7 +55,7 @@ export default function App() {
         <div className="app">
           <nav className="nav">
             <span className="nav-brand" onClick={() => setPage('feed')}>Nezumi</span>
-            <button className={`nav-item ${page === 'feed' ? 'active' : ''}`} onClick={() => setPage('feed')}>
+            <button className={`nav-item ${page === 'feed' || page === 'post-detail' ? 'active' : ''}`} onClick={() => setPage('feed')}>
               フィード
             </button>
             <button className={`nav-item ${page === 'settings' ? 'active' : ''}`} onClick={() => setPage('settings')}>
@@ -62,7 +64,16 @@ export default function App() {
           </nav>
           <main className="main">
             <ErrorBoundary>
-              {page === 'feed' && <Feed />}
+              {(page === 'feed' || page === 'post-detail') && (
+                page === 'post-detail' && selectedPostId ? (
+                  <PostDetail
+                    postId={selectedPostId}
+                    onBack={() => setPage('feed')}
+                  />
+                ) : (
+                  <Feed onPostClick={(id) => { setSelectedPostId(id); setPage('post-detail') }} />
+                )
+              )}
               {page === 'settings' && <Settings />}
             </ErrorBoundary>
           </main>
