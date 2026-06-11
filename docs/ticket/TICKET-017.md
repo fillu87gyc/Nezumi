@@ -24,6 +24,7 @@ NGワード・最低スコア・最低コメント数・NSFW フィルターを�
 - D1 からユーザーフィルター設定を取得するヘルパー
 
 ### Out of Scope
+- 設定の書き込み API（→ #23）
 - 設定 UI（→ #18）
 - カスタムフィード（Phase 5 以降の追加 PR で対応）
 
@@ -47,9 +48,9 @@ NGワード・最低スコア・最低コメント数・NSFW フィルターを�
   - NSFW フィルター: `settings.filterNsfw && post.nsfw` で除外
   - NGワード: `target` に応じて `title` / `selftext` / 両方を対象に `matchType` でマッチング
     - `contains`: `text.toLowerCase().includes(word.toLowerCase())`
-    - `exact`: `text === word`
-    - `regex`: `new RegExp(word, 'i').test(text)`
-- [ ] `src/lib/userSettings.ts` に `getUserFilterSettings(userId, env)` を作成（D1 クエリ）
+    - `exact`: `text.toLowerCase() === word.toLowerCase()`（contains と同様 case-insensitive に統一）
+    - `regex`: `new RegExp(word, 'i').test(text)`（無効な正規表現と 100 文字超のパターンは無視。自分しか入力しない前提だが ReDoS の自損防止）
+- [ ] `src/lib/userSettings.ts` に `getUserFilterSettings(userId, env)` を作成（D1 クエリ。`users.settings` JSON + `ng_words` テーブルを読む。**書き込みは #23 の設定 API が担当**）
 - [ ] `src/routes/feed.ts` の `/home` と `/r/:subreddit` に `filterPosts` を統合
   - 翻訳の前にフィルタリングを行う（不要な翻訳 API コールを削減）
 

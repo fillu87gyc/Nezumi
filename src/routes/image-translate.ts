@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Env, Variables, ImageTranslateResult } from '../types'
 import { requireAuth } from '../middleware/auth'
+import { claudeApiBase } from '../lib/endpoints'
 
 export const imageTranslate = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -47,7 +48,7 @@ imageTranslate.post('/translate', async (c) => {
 
 テキストがない場合は hasText: false で返してください。JSONのみ返してください。`
 
-  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+  const claudeRes = await fetch(`${claudeApiBase(c.env)}/v1/messages`, {
     method: 'POST',
     headers: {
       'x-api-key': c.env.CLAUDE_API_KEY,

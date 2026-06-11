@@ -40,7 +40,9 @@ Service Worker でプッシュ通知を受信し、システム通知として�
   - なければ `clients.openWindow(url)`
 - [ ] `client/src/hooks/usePushNotification.ts` を作成
   - `Notification.permission` チェック → `requestPermission()` → `serviceWorker.ready`
-  - `registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: VAPID_PUBLIC_KEY })`
+  - `urlBase64ToUint8Array(VAPID_PUBLIC_KEY)` で変換してから
+    `registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` を呼ぶ
+    （base64url 文字列のまま渡すと Safari 等で失敗する）
   - `POST /api/notify/subscribe` に subscription を送信
 - [ ] `client/src/components/Settings/` に「プッシュ通知を有効にする」ボタンを追加（#18 と連携）
 - [ ] `VITE_VAPID_PUBLIC_KEY` 環境変数を `client/.env.example` に追加

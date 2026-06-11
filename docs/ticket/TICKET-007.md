@@ -23,7 +23,7 @@
 - `client/src/components/FeedCard/FeedCard.tsx` — 投稿カード（翻訳なし版）
 - `client/src/hooks/useIntersection.ts` — Intersection Observer フック
 - `client/src/api/client.ts` — fetch ラッパー
-- `client/src/App.tsx` — ルーティング骨格（React Router or 簡易実装）
+- `client/src/App.tsx` — ルーティング骨格（React Router を採用。`/settings`（#18）・投稿詳細（#24）の追加が確定しているため）
 - ログイン画面の最小実装（`/auth/login` へのリンクのみ）
 
 ### Out of Scope
@@ -71,5 +71,5 @@
 
 ## UI 参考
 
-`docs/` に添付のモックアップ HTML（`redditpwamock.html`）のフィード画面を参考にする。  
+`docs/mockup.html` のフィード画面を参考にする。  
 ダークテーマ（背景 `#0d0d0f`）・アクセントカラー `#ff4500`。

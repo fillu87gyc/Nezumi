@@ -10,7 +10,7 @@ export const requireAuth = createMiddleware<{ Bindings: Env; Variables: Variable
       return c.json({ error: 'Unauthorized' }, 401)
     }
     try {
-      const payload = await verify(token, c.env.JWT_SECRET)
+      const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
       c.set('userId', payload.sub as string)
       c.set('userName', payload.name as string)
       await next()

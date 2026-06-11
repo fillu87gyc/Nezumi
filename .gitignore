@@ -6,3 +6,11 @@ client/dist/
 *.env
 .env.local
 .env.*.local
+
+# E2E
+e2e/.wrangler-state/
+e2e/.auth/
+e2e/artifacts/
+e2e/test-results/
+e2e/playwright-report/
+*.tsbuildinfo

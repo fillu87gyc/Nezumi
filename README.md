@@ -113,6 +113,17 @@ pnpm dev:worker   # wrangler dev --local
 pnpm dev:client   # cd client && vite
 ```
 
+## テスト
+
+```bash
+pnpm test                          # unit test (vitest)
+pnpm build && pnpm test:e2e        # E2E (Playwright + モック Reddit + 実 KV/D1)
+```
+
+E2E は全機能（チケット #1–#18）をカバーし、実行時に全機能のスクリーンショットと
+機能カタログ（`e2e/artifacts/index.html`）を生成する。CI では `feature-catalog`
+アーティファクトとしてダウンロードできる。詳細は [docs/E2E.md](docs/E2E.md)。
+
 ---
 
 ## コスト試算（個人利用）

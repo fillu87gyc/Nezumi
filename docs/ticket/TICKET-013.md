@@ -21,7 +21,7 @@
 
 ### In Scope
 - `client/vite.config.ts` の PWA 設定（manifest・Workbox）
-- `public/manifest.json` の作成
+  - manifest は VitePWA の `manifest` オプションのみで管理する（`public/manifest.json` を手書きすると二重管理になるため作らない）
 - PWA アイコン（192px・512px・512px maskable）のプレースホルダー配置
 - `client/src/sw.ts` の骨格（プッシュ受信は → #15）
 
@@ -52,7 +52,10 @@
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       runtimeCaching: [
         { urlPattern: /\/api\/feed/, handler: 'NetworkFirst',
-          options: { cacheName: 'api-feed-cache', expiration: { maxEntries: 50, maxAgeSeconds: 3600 }, networkTimeoutSeconds: 5 } },
+          options: { cacheName: 'api-feed-cache',
+            // Access セッション切れ時のリダイレクト/ログイン HTML をキャッシュしないこと（重要）
+            cacheableResponse: { statuses: [200] },
+            expiration: { maxEntries: 50, maxAgeSeconds: 3600 }, networkTimeoutSeconds: 5 } },
         { urlPattern: /\.(jpg|jpeg|png|webp|gif)$/, handler: 'CacheFirst',
           options: { cacheName: 'image-cache', expiration: { maxEntries: 200, maxAgeSeconds: 86400 } } }
       ]
@@ -61,7 +64,6 @@
   ```
 - [ ] `client/public/icons/` にプレースホルダー PNG を配置（192.png, 512.png, 512-maskable.png）
 - [ ] `client/src/sw.ts` に `cleanupOutdatedCaches` + `precacheAndRoute` の骨格を追加
-- [ ] `client/vite.config.ts` の `build.outDir` を `'../client/dist'` に設定
 
 ---
 
@@ -69,11 +71,11 @@
 
 | # | 基準 | 検証方法 |
 |---|---|---|
-| AC-1 | `npm run build` 後に `client/dist/sw.js` が生成される | ビルド確認 |
+| AC-1 | `pnpm build` 後に `client/dist/sw.js` が生成される | ビルド確認 |
 | AC-2 | Chrome DevTools の Application タブで「インストール可能」バナーが表示される | ブラウザ確認 |
 | AC-3 | ネットワークをオフラインにしても直近のフィードページが表示される | DevTools → オフライン |
-| AC-4 | `X-Cache: HIT` のキャッシュ応答がフィード API にある | DevTools Network |
-| AC-5 | `manifest.json` に `name`, `theme_color`, `icons` が正しく含まれる | ブラウザ確認 |
+| AC-4 | 生成された manifest に `name`, `theme_color`, `icons` が正しく含まれる | ブラウザ確認 |
+| AC-5 | 非 200 レスポンス（Access リダイレクト・5xx）が `api-feed-cache` に保存されない | DevTools Application → Cache Storage |
 | AC-6 | `tsc --noEmit` がエラーなく通る | CI |
 
 ---

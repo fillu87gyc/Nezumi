@@ -33,7 +33,7 @@ KV キャッシュで同一テキストの重複 API コールを防ぎ、無料
 
 - [ ] `src/routes/translate.ts` を作成し `requireAuth` を適用
 - [ ] `POST /api/translate/text` を実装
-  - `{ text, sourceLang?, targetLang? }` を受け取る（デフォルト: EN→JA）
+  - `{ text, sourceLang?, targetLang? }` を受け取る（デフォルト: targetLang=JA、**sourceLang は未指定で DeepL の自動検出に任せる**。Reddit は非英語投稿も多いため EN 固定にしない）
   - 空文字は `{ translated: '' }` をそのまま返す
   - キャッシュキー: `trans:{sha256(text).slice(0,16)}:{targetLang}`
   - キャッシュヒット時: `{ translated, cached: true }`
@@ -41,7 +41,8 @@ KV キャッシュで同一テキストの重複 API コールを防ぎ、無料
 - [ ] `POST /api/translate/batch` を実装
   - `{ texts: [{ id, title, selftext? }], targetLang? }` を受け取る
   - 各テキストのキャッシュを並列チェック
-  - 未キャッシュ分を 50 件チャンクに分割して DeepL バッチ翻訳
+  - 未キャッシュ分を **50 テキスト**単位のチャンクに分割して DeepL バッチ翻訳
+    （DeepL の上限は「リクエストあたり text パラメータ 50 個」。title と selftext は別カウントなので、投稿数ではなくテキスト数でチャンクすること）
   - `{ results: { [id]: { title, selftext? } } }` を返す
 - [ ] `hashText(text)` ユーティリティを実装（SHA-256 の先頭 16 hex 文字）
 - [ ] `chunkArray<T>()` ユーティリティを実装
@@ -81,3 +82,5 @@ POST /api/translate/batch
 
 - DeepL 無料枠は 500,000 文字/月。フィード 25 件 × タイトル平均 80 文字 ≈ 2,000 文字/フェッチ。
 - キャッシュにより同じ投稿の再翻訳は発生しない
+- 本エンドポイントに独自のレート制限は設けない（Cloudflare Access 配下の単独利用前提のため。
+  公開構成に変える場合は #20 同様のクォータ管理が必要になる）

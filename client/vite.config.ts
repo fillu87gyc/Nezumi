@@ -7,7 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      devOptions: { enabled: true },
+      // sw.ts の push / notificationclick ハンドラを本番 SW に含めるため injectManifest を使う
+      // （generateSW だと sw.ts がビルドされず、ランタイムキャッシュとプッシュ受信が乖離する）
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       manifest: {
         name: 'Nezumi — Reddit JP',
         short_name: 'Nezumi',
@@ -23,27 +27,9 @@ export default defineConfig({
           { src: '/icons/512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
+      // ランタイムキャッシュ（NetworkFirst / CacheFirst）は src/sw.ts 側で registerRoute する
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /\/api\/feed/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-feed-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 3600 },
-              networkTimeoutSeconds: 5,
-            },
-          },
-          {
-            urlPattern: /\.(jpg|jpeg|png|webp|gif)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'image-cache',
-              expiration: { maxEntries: 200, maxAgeSeconds: 86400 },
-            },
-          },
-        ],
       },
     }),
   ],
