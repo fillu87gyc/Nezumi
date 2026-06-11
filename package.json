@@ -1,0 +1,26 @@
+{
+  "name": "nezumi",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev:worker": "wrangler dev --local",
+    "dev:client": "pnpm --filter client dev",
+    "build": "pnpm --filter client build",
+    "deploy": "bash deploy.sh",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250508.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "wrangler": "^4.0.0"
+  }
+}
