@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
 import { capture } from '../helpers/report'
-import { mockConfig } from '../helpers/mock'
 
 // エラーハンドリング + ローディング UI（#21）
 
@@ -10,8 +9,10 @@ async function gotoFeed(page: Page) {
 }
 
 test('フィード API エラー時にエラー UI と再試行ボタンが表示される', async ({ page }) => {
-  // モックサーバーをエラーモードに切り替え
-  await mockConfig({ failFeed: true })
+  // /api/feed/home を強制的に 500 にする（KV キャッシュをバイパス）
+  await page.route('/api/feed/home*', (route) =>
+    route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'test error' }) })
+  )
 
   await page.goto('/')
 
@@ -29,18 +30,23 @@ test('フィード API エラー時にエラー UI と再試行ボタンが表�
     title: 'フィードエラー UI + 再試行ボタン',
     desc: 'フィード API が 500 を返すとエラーメッセージと再試行ボタンが表示される。',
   })
-
-  // モックを正常に戻す
-  await mockConfig({ failFeed: false })
 })
 
 test('再試行ボタンでフィードが復帰する', async ({ page }) => {
-  await mockConfig({ failFeed: true })
+  let failFeed = true
+
+  await page.route('/api/feed/home*', (route) => {
+    if (failFeed) {
+      return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'test error' }) })
+    }
+    return route.continue()
+  })
+
   await page.goto('/')
   await expect(page.locator('.feed-error')).toBeVisible({ timeout: 15_000 })
 
   // 正常モードに戻してから再試行
-  await mockConfig({ failFeed: false })
+  failFeed = false
   await page.locator('.feed-error .retry-btn').click()
 
   // フィードカードが表示される
