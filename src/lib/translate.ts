@@ -1,5 +1,6 @@
 import type { Post, Env } from '../types'
 import { hashText } from '../routes/translate'
+import { deeplApiBase } from './endpoints'
 
 export async function translateBatch(posts: Post[], env: Env): Promise<Post[]> {
   if (posts.length === 0) return posts
@@ -44,7 +45,7 @@ export async function translateBatch(posts: Post[], env: Env): Promise<Post[]> {
 
     const allTranslations: string[] = []
     for (const chunk of chunks) {
-      const res = await fetch('https://api-free.deepl.com/v2/translate', {
+      const res = await fetch(`${deeplApiBase(env)}/v2/translate`, {
         method: 'POST',
         headers: {
           Authorization: `DeepL-Auth-Key ${env.DEEPL_API_KEY}`,

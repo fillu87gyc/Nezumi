@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { apiFetch } from '../../api/client'
-import type { ImageTranslateResult } from '../../../../src/types'
+import type { ImageTranslateResult } from '../../../../src/api-types'
 import './ImageSwipe.css'
 
 interface Props {

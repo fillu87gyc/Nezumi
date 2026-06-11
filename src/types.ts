@@ -11,6 +11,11 @@ export interface Env {
   ENVIRONMENT: string
   VAPID_PRIVATE_KEY?: string
   VAPID_PUBLIC_KEY?: string
+  // E2E テストで外部 API をモックサーバーに向けるための上書き。未設定なら本番 URL。
+  REDDIT_WWW_BASE?: string
+  REDDIT_OAUTH_BASE?: string
+  DEEPL_API_BASE?: string
+  CLAUDE_API_BASE?: string
 }
 
 export interface Variables {
@@ -18,49 +23,4 @@ export interface Variables {
   userName: string
 }
 
-export interface Post {
-  id: string
-  title: string
-  author: string
-  subreddit: string
-  score: number
-  numComments: number
-  url: string
-  permalink: string
-  selftext: string
-  thumbnail?: string
-  preview?: string
-  isVideo: boolean
-  media?: unknown
-  flair?: string
-  createdAt: number
-  nsfw: boolean
-  spoiler: boolean
-  stickied: boolean
-  titleJa?: string
-  selftextJa?: string
-}
-
-export interface Comment {
-  id: string
-  author: string
-  body: string
-  score: number
-  createdAt: number
-  replies: Comment[]
-  depth: number
-}
-
-export interface ImageTranslateResult {
-  hasText: boolean
-  originalText: string
-  translatedText: string
-  textRegions: { original: string; translated: string }[]
-}
-
-export interface FilterSettings {
-  ngWords: { word: string; matchType: 'contains' | 'exact' | 'regex'; target: 'all' | 'title' | 'body' }[]
-  minScore: number
-  minComments: number
-  filterNsfw: boolean
-}
+export type { Post, Comment, ImageTranslateResult, FilterSettings } from './api-types'

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { requireAuth } from '../middleware/auth'
 import { refreshAccessToken } from './auth'
+import { redditOauthBase } from '../lib/endpoints'
 
 export const notify = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -20,7 +21,7 @@ notify.get('/unread', async (c) => {
   const userId = c.get('userId')
   const token = await refreshAccessToken(userId, c.env)
 
-  const res = await fetch('https://oauth.reddit.com/message/unread', {
+  const res = await fetch(`${redditOauthBase(c.env)}/message/unread`, {
     headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
   })
   const json = await res.json() as { data: { children: unknown[] } }
@@ -56,7 +57,7 @@ export async function sendPushNotifications(env: Env): Promise<void> {
         if (!subData) return
 
         const token = await refreshAccessToken(user.id, env)
-        const res = await fetch('https://oauth.reddit.com/message/unread', {
+        const res = await fetch(`${redditOauthBase(env)}/message/unread`, {
           headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
         })
         const json = await res.json() as { data: { children: unknown[] } }

@@ -30,7 +30,7 @@ function extractPreview(data: Record<string, unknown>): string | undefined {
   if (!preview) return undefined
   const images = preview.images as Array<Record<string, unknown>> | undefined
   if (!images || images.length === 0) return undefined
-  const source = (images[0].source as Record<string, string>) | undefined
+  const source = images[0].source as Record<string, string> | undefined
   if (!source) return undefined
   return source.url?.replace(/&amp;/g, '&')
 }

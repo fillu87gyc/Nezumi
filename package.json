@@ -8,19 +8,29 @@
   },
   "scripts": {
     "dev:worker": "wrangler dev --local",
-    "dev:client": "pnpm --filter client dev",
-    "build": "pnpm --filter client build",
+    "dev:client": "pnpm --filter nezumi-client dev",
+    "build": "pnpm --filter nezumi-client build",
     "deploy": "bash deploy.sh",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report e2e/playwright-report"
   },
   "dependencies": {
     "hono": "^4.7.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250508.0",
+    "@playwright/test": "1.56.1",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "wrangler": "^4.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
   }
 }

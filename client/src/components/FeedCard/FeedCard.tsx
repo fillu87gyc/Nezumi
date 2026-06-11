@@ -1,4 +1,4 @@
-import type { Post } from '../../../../src/types'
+import type { Post } from '../../../../src/api-types'
 import TextSwipe from '../TextSwipe/TextSwipe'
 import ImageSwipe from '../ImageSwipe/ImageSwipe'
 import './FeedCard.css'

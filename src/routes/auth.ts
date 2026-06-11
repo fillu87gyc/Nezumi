@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { sign } from 'hono/jwt'
 import { setCookie, deleteCookie } from 'hono/cookie'
 import type { Env } from '../types'
+import { redditWwwBase, redditOauthBase } from '../lib/endpoints'
 
 export const auth = new Hono<{ Bindings: Env }>()
 
@@ -35,7 +36,7 @@ export async function refreshAccessToken(userId: string, env: Env): Promise<stri
     return tokenData.access_token
   }
 
-  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+  const response = await fetch(`${redditWwwBase(env)}/api/v1/access_token`, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${btoa(`${env.REDDIT_CLIENT_ID}:${env.REDDIT_CLIENT_SECRET}`)}`,
@@ -77,7 +78,7 @@ auth.get('/login', async (c) => {
     code_challenge_method: 'S256',
   })
 
-  return c.redirect(`https://www.reddit.com/api/v1/authorize?${params}`)
+  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
 })
 
 auth.get('/callback', async (c) => {
@@ -95,7 +96,7 @@ auth.get('/callback', async (c) => {
 
   const baseUrl = c.env.BASE_URL || 'http://localhost:8787'
 
-  const tokenResponse = await fetch('https://www.reddit.com/api/v1/access_token', {
+  const tokenResponse = await fetch(`${redditWwwBase(c.env)}/api/v1/access_token`, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${btoa(`${c.env.REDDIT_CLIENT_ID}:${c.env.REDDIT_CLIENT_SECRET}`)}`,
@@ -116,7 +117,7 @@ auth.get('/callback', async (c) => {
     expires_in: number
   }
 
-  const userResponse = await fetch('https://oauth.reddit.com/api/v1/me', {
+  const userResponse = await fetch(`${redditOauthBase(c.env)}/api/v1/me`, {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
       'User-Agent': 'Nezumi/1.0',
@@ -136,7 +137,8 @@ auth.get('/callback', async (c) => {
   )
 
   await c.env.DB.prepare(
-    'INSERT OR REPLACE INTO users (id, name, created_at) VALUES (?, ?, unixepoch())'
+    // INSERT OR REPLACE だと再ログインで settings カラムがデフォルトに戻ってしまう
+    'INSERT INTO users (id, name, created_at) VALUES (?, ?, unixepoch()) ON CONFLICT(id) DO UPDATE SET name = excluded.name'
   )
     .bind(user.id, user.name)
     .run()
@@ -154,10 +156,21 @@ auth.get('/callback', async (c) => {
     maxAge: 60 * 60 * 24 * 30,
   })
 
+  // session は httpOnly で JS から見えないため、ログイン状態の表示判定用に
+  // 非 httpOnly のコンパニオン Cookie を併設する（認可には使わない）
+  setCookie(c, 'logged_in', '1', {
+    httpOnly: false,
+    secure: c.env.ENVIRONMENT !== 'development',
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  })
+
   return c.redirect('/')
 })
 
 auth.post('/logout', (c) => {
   deleteCookie(c, 'session', { path: '/' })
+  deleteCookie(c, 'logged_in', { path: '/' })
   return c.json({ ok: true })
 })
