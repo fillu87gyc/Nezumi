@@ -1,9 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { capture } from '../helpers/report'
 
-// ホームフィード UI（#5/#7/#9/#10/#16/#17）
+// ホームフィード UI（#5/#7/#9/#10/#16/#17/#19）
 // モックの 1 ページ目は 7 投稿。alice には D1 シード済みフィルター
 // （NG ワード FILTERME / minScore 5 / NSFW 非表示）が効き、4 投稿だけが表示される。
+// #19 で仮想スクロールを導入。4 件がビューポートに収まると末尾インデックスに達し 2 ページ目を自動取得する。
 
 async function gotoFeed(page: Page) {
   await page.goto('/')
@@ -13,8 +14,8 @@ async function gotoFeed(page: Page) {
 test('ホームフィードが日本語翻訳付きで表示され、D1 のフィルターが適用される', async ({ page }) => {
   await gotoFeed(page)
 
-  // D1 フィルター適用後の 4 件（7 - NGワード - 低スコア - NSFW）
-  await expect(page.locator('.feed-card')).toHaveCount(4)
+  // D1 フィルターで除外される投稿が表示されないことを確認
+  // （仮想スクロールにより 2 ページ目が自動取得されるため count は 4 以上になる）
   await expect(page.locator('body')).not.toContainText('FILTERME')
   await expect(page.locator('body')).not.toContainText('A very low effort post')
   await expect(page.locator('.badge.nsfw')).toHaveCount(0)
@@ -69,20 +70,18 @@ test('selftext のある投稿は本文も TextSwipe で翻訳表示される', 
   await expect(body).toContainText('【JA】I learned this while studying Japanese')
 })
 
-test('無限スクロールで 2 ページ目が自動読み込みされる', async ({ page }) => {
+test('仮想スクロール: 末尾インデックスに達すると 2 ページ目が自動読み込みされる', async ({ page }) => {
   await gotoFeed(page)
-  await expect(page.locator('.feed-card')).toHaveCount(4)
 
-  // sentinel が見えると次ページを取得する
-  await page.locator('.sentinel').scrollIntoViewIfNeeded()
+  // 4 件の推定高さがビューポートに収まり末尾インデックスに到達 → 2 ページ目を自動取得
   await expect(page.locator('.feed-card')).toHaveCount(6, { timeout: 20_000 })
   await expect(page.locator('body')).toContainText('Second page marker post')
 
   await capture(page, {
     id: '05-infinite-scroll',
-    tickets: [7],
-    title: '無限スクロール（2 ページ目読み込み）',
-    desc: 'sentinel が画面に入ると after カーソル付きで次ページを取得し、フィード末尾に追加する。',
+    tickets: [7, 19],
+    title: '無限スクロール（仮想スクロール版）',
+    desc: 'フィード末尾インデックスに達すると after カーソル付きで次ページを取得し、フィード末尾に追加する。',
     fullPage: true,
   })
 })

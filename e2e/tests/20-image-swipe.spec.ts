@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { capture } from '../helpers/report'
 import { mockStats } from '../helpers/mock'
 
-// ImageSwipe（#11/#12）: 画像を翻訳パネルへスワイプすると
+// ImageSwipe（#11/#12/#19）: 画像を翻訳パネルへスワイプすると
 // Workers が画像を取得 → Claude Vision（モック）で OCR + 翻訳して返す。
 
 async function gotoFeed(page: Page) {
@@ -15,6 +15,15 @@ function swipeToTranslatePanel(card: ReturnType<Page['locator']>) {
     el.scrollTo({ left: el.clientWidth, behavior: 'instant' as ScrollBehavior })
   })
 }
+
+test('ImageSwipe の画像に loading="lazy" と decoding="async" が設定されている', async ({ page }) => {
+  await gotoFeed(page)
+
+  const firstImg = page.locator('.image-swipe img').first()
+  await expect(firstImg).toBeVisible({ timeout: 20_000 })
+  await expect(firstImg).toHaveAttribute('loading', 'lazy')
+  await expect(firstImg).toHaveAttribute('decoding', 'async')
+})
 
 test('テキスト入り画像をスワイプすると OCR + 日本語翻訳がオーバーレイ表示される', async ({ page }) => {
   await gotoFeed(page)
