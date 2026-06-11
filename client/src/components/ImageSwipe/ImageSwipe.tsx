@@ -43,11 +43,11 @@ export default function ImageSwipe({ imageUrl, postId }: Props) {
     <div className="image-swipe">
       <div className="image-swipe-track" ref={containerRef} onScroll={handleScroll}>
         <div className="image-swipe-panel">
-          <img src={imageUrl} alt="" loading="lazy" className="swipe-image" />
+          <img src={imageUrl} alt="" loading="lazy" decoding="async" className="swipe-image" />
           <div className="swipe-hint">← スワイプで翻訳</div>
         </div>
         <div className="image-swipe-panel overlay-panel">
-          <img src={imageUrl} alt="" loading="lazy" className="swipe-image bg-image" />
+          <img src={imageUrl} alt="" loading="lazy" decoding="async" className="swipe-image bg-image" />
           <div className="overlay-content">
             {loading && <div className="spinner" />}
             {!loading && result && result.hasText && (

@@ -1,7 +1,8 @@
+import { useRef, useEffect } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { apiFetch } from '../../api/client'
 import FeedCard from '../FeedCard/FeedCard'
-import { useIntersection } from '../../hooks/useIntersection'
 import { useSettingsStore } from '../../stores/settingsStore'
 import type { Post } from '../../../../src/types'
 import './Feed.css'
@@ -13,6 +14,7 @@ interface FeedResponse {
 
 export default function Feed() {
   const autoTranslate = useSettingsStore((s) => s.autoTranslate)
+  const parentRef = useRef<HTMLDivElement>(null)
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteQuery({
@@ -26,12 +28,23 @@ export default function Feed() {
       getNextPageParam: (lastPage) => lastPage.after || null,
     })
 
-  const sentinelRef = useIntersection(
-    () => {
-      if (hasNextPage && !isFetchingNextPage) fetchNextPage()
-    },
-    [hasNextPage, isFetchingNextPage]
-  )
+  const posts = data?.pages.flatMap((p) => p.posts) ?? []
+
+  const rowVirtualizer = useVirtualizer({
+    count: posts.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200,
+    overscan: 5,
+  })
+
+  const virtualItems = rowVirtualizer.getVirtualItems()
+
+  useEffect(() => {
+    const last = virtualItems[virtualItems.length - 1]
+    if (last && last.index >= posts.length - 3 && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [virtualItems, hasNextPage, isFetchingNextPage, fetchNextPage, posts.length])
 
   if (isLoading) {
     return (
@@ -47,14 +60,36 @@ export default function Feed() {
     return <div className="feed-error">フィードの読み込みに失敗しました。</div>
   }
 
-  const posts = data?.pages.flatMap((p) => p.posts) ?? []
-
   return (
-    <div className="feed">
-      {posts.map((post) => (
-        <FeedCard key={post.id} post={post} />
-      ))}
-      <div ref={sentinelRef} className="sentinel" />
+    <div ref={parentRef} className="feed feed-virtual">
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualItems.map((virtualItem) => {
+          const post = posts[virtualItem.index]
+          if (!post) return null
+          return (
+            <div
+              key={virtualItem.key}
+              data-index={virtualItem.index}
+              ref={rowVirtualizer.measureElement}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <FeedCard post={post} />
+            </div>
+          )
+        })}
+      </div>
       {isFetchingNextPage && <div className="feed-loading">読み込み中...</div>}
     </div>
   )
