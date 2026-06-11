@@ -87,12 +87,21 @@ test('フィルタースライダー（最低スコア・最低コメント数�
   await gotoSettings(page)
 
   const scoreRow = page.locator('.slider-row', { hasText: '最低スコア' })
+  // PATCH が D1 に到達するのを確実に待つため、応答を先に登録してから操作する
+  const scorePatchDone = page.waitForResponse(
+    (r) => r.url().includes('/api/settings/filter') && r.request().method() === 'PATCH'
+  )
   await scoreRow.locator('input[type=range]').fill('500')
   await expect(scoreRow).toContainText('最低スコア: 500')
+  await scorePatchDone
 
   const commentsRow = page.locator('.slider-row', { hasText: '最低コメント数' })
+  const commentsPatchDone = page.waitForResponse(
+    (r) => r.url().includes('/api/settings/filter') && r.request().method() === 'PATCH'
+  )
   await commentsRow.locator('input[type=range]').fill('42')
   await expect(commentsRow).toContainText('最低コメント数: 42')
+  await commentsPatchDone
 
   // リロード後も保持
   await page.reload()
