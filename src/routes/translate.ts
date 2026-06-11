@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Env, Variables } from '../types'
 import { requireAuth } from '../middleware/auth'
+import { deeplApiBase } from '../lib/endpoints'
 
 export const translate = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -33,7 +34,7 @@ async function translateTextWithDeepL(
   const cached = await env.KV.get(cacheKey)
   if (cached) return cached
 
-  const res = await fetch('https://api-free.deepl.com/v2/translate', {
+  const res = await fetch(`${deeplApiBase(env)}/v2/translate`, {
     method: 'POST',
     headers: {
       Authorization: `DeepL-Auth-Key ${env.DEEPL_API_KEY}`,
@@ -65,7 +66,7 @@ translate.post('/text', async (c) => {
     return c.json({ translated: cached, cached: true })
   }
 
-  const res = await fetch('https://api-free.deepl.com/v2/translate', {
+  const res = await fetch(`${deeplApiBase(c.env)}/v2/translate`, {
     method: 'POST',
     headers: {
       Authorization: `DeepL-Auth-Key ${c.env.DEEPL_API_KEY}`,
@@ -126,7 +127,7 @@ translate.post('/batch', async (c) => {
       if (item.selftext) textList.push(item.selftext)
     })
 
-    const res = await fetch('https://api-free.deepl.com/v2/translate', {
+    const res = await fetch(`${deeplApiBase(c.env)}/v2/translate`, {
       method: 'POST',
       headers: {
         Authorization: `DeepL-Auth-Key ${c.env.DEEPL_API_KEY}`,

@@ -14,8 +14,10 @@ type Page = 'feed' | 'settings'
 
 export default function App() {
   const [page, setPage] = useState<Page>('feed')
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return document.cookie.includes('session=')
+  // session Cookie は httpOnly で document.cookie に現れないため、
+  // サーバーが併設する非 httpOnly の logged_in Cookie で判定する
+  const [isLoggedIn] = useState<boolean>(() => {
+    return document.cookie.includes('logged_in=')
   })
 
   if (!isLoggedIn) {

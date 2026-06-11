@@ -7,6 +7,7 @@ import { normalizePost, normalizeComments } from '../lib/reddit'
 import { translateBatch } from '../lib/translate'
 import { filterPosts } from '../lib/filter'
 import { getUserFilterSettings } from '../lib/userSettings'
+import { redditOauthBase } from '../lib/endpoints'
 
 export const feed = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -20,7 +21,7 @@ feed.get('/home', kvCache({ ttl: 60 }), async (c) => {
   const params = new URLSearchParams({ sort, limit })
   if (after) params.set('after', after)
 
-  const res = await fetch(`https://oauth.reddit.com/${sort}?${params}`, {
+  const res = await fetch(`${redditOauthBase(c.env)}/${sort}?${params}`, {
     headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
   })
   const json = await res.json() as { data: { children: unknown[]; after: string } }
@@ -45,7 +46,7 @@ feed.get('/r/:subreddit', kvCache({ ttl: 120 }), async (c) => {
   const params = new URLSearchParams({ sort, limit })
   if (after) params.set('after', after)
 
-  const res = await fetch(`https://oauth.reddit.com/r/${subreddit}/${sort}?${params}`, {
+  const res = await fetch(`${redditOauthBase(c.env)}/r/${subreddit}/${sort}?${params}`, {
     headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
   })
   const json = await res.json() as { data: { children: unknown[]; after: string } }
@@ -65,7 +66,7 @@ feed.get('/subreddits', kvCache({ ttl: 300 }), async (c) => {
   const userId = c.get('userId')
   const token = await refreshAccessToken(userId, c.env)
 
-  const res = await fetch('https://oauth.reddit.com/subreddits/mine/subscriber?limit=100', {
+  const res = await fetch(`${redditOauthBase(c.env)}/subreddits/mine/subscriber?limit=100`, {
     headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
   })
   const json = await res.json() as { data: { children: unknown[] } }
@@ -89,7 +90,7 @@ feed.get('/post/:postId', async (c) => {
   const userId = c.get('userId')
   const token = await refreshAccessToken(userId, c.env)
 
-  const res = await fetch(`https://oauth.reddit.com/comments/${postId}?sort=${sort}&depth=5`, {
+  const res = await fetch(`${redditOauthBase(c.env)}/comments/${postId}?sort=${sort}&depth=5`, {
     headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'Nezumi/1.0' },
   })
   const json = await res.json() as [

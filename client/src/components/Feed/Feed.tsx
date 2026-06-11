@@ -3,7 +3,7 @@ import { apiFetch } from '../../api/client'
 import FeedCard from '../FeedCard/FeedCard'
 import { useIntersection } from '../../hooks/useIntersection'
 import { useSettingsStore } from '../../stores/settingsStore'
-import type { Post } from '../../../../src/types'
+import type { Post } from '../../../../src/api-types'
 import './Feed.css'
 
 interface FeedResponse {
