@@ -5,6 +5,7 @@ import './FeedCard.css'
 
 interface Props {
   post: Post
+  onPostClick?: (postId: string) => void
 }
 
 function formatTime(utc: number): string {
@@ -15,9 +16,9 @@ function formatTime(utc: number): string {
   return `${Math.floor(diff / 86400)}日前`
 }
 
-export default function FeedCard({ post }: Props) {
+export default function FeedCard({ post, onPostClick }: Props) {
   return (
-    <article className="feed-card">
+    <article className="feed-card" onClick={() => onPostClick?.(post.id)} style={{ cursor: onPostClick ? 'pointer' : undefined }}>
       <div className="card-meta">
         <span className="subreddit">r/{post.subreddit}</span>
         <span className="separator">·</span>
@@ -54,8 +55,19 @@ export default function FeedCard({ post }: Props) {
 
       <div className="card-actions">
         <span className="score">▲ {post.score.toLocaleString()}</span>
-        <span className="comments">💬 {post.numComments.toLocaleString()}</span>
-        <a href={post.permalink} target="_blank" rel="noopener noreferrer" className="reddit-link">
+        <button
+          className="comments comments-btn"
+          onClick={(e) => { e.stopPropagation(); onPostClick?.(post.id) }}
+        >
+          💬 {post.numComments.toLocaleString()}
+        </button>
+        <a
+          href={post.permalink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="reddit-link"
+          onClick={(e) => e.stopPropagation()}
+        >
           Reddit で開く
         </a>
       </div>

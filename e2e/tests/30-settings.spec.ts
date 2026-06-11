@@ -61,16 +61,17 @@ test('NGワードの追加・削除がリアルタイムに反映され、リロ
 
   await page.locator('.ng-input').fill('kitsune')
   await page.locator('.ng-add-btn').click()
-  await expect(page.locator('.ng-tag')).toHaveCount(2)
+  // D1 には setup でシードされた FILTERME が既にある (合計 3 件)
+  await expect(page.locator('.ng-tag')).toHaveCount(3)
 
   await capture(page, {
     id: '11-ngword-tags',
-    tickets: [18],
+    tickets: [18, 23],
     title: 'NGワード管理',
-    desc: 'NGワードをテキスト入力 + Enter / 追加ボタンで登録でき、タグとして一覧表示される。',
+    desc: 'NGワードをテキスト入力 + Enter / 追加ボタンで登録でき、タグとして一覧表示される。D1 に永続化される。',
   })
 
-  // リロードしても保持される（zustand persist → localStorage）
+  // リロードしても保持される（D1 API 経由）
   await page.reload()
   await page.locator('.nav-item', { hasText: '設定' }).click()
   await expect(page.locator('.ng-tag', { hasText: 'tanuki' })).toBeVisible()

@@ -13,7 +13,11 @@ interface FeedResponse {
   after: string | null
 }
 
-export default function Feed() {
+interface FeedProps {
+  onPostClick?: (postId: string) => void
+}
+
+export default function Feed({ onPostClick }: FeedProps) {
   const autoTranslate = useSettingsStore((s) => s.autoTranslate)
   const parentRef = useRef<HTMLDivElement>(null)
 
@@ -95,7 +99,7 @@ export default function Feed() {
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <FeedCard post={post} />
+              <FeedCard post={post} onPostClick={onPostClick} />
             </div>
           )
         })}
