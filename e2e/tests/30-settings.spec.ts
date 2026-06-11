@@ -83,7 +83,7 @@ test('NGワードの追加・削除がリアルタイムに反映され、リロ
   await expect(page.locator('.ng-tag', { hasText: 'kitsune' })).toHaveCount(1)
 })
 
-test('フィルタースライダー（最低スコア・最低コメント数）が操作に追従する', async ({ page }) => {
+test('フィルタースライダー（最低スコア・最低コメント数）が操作に追従する', async ({ page, request }) => {
   await gotoSettings(page)
 
   const scoreRow = page.locator('.slider-row', { hasText: '最低スコア' })
@@ -98,6 +98,9 @@ test('フィルタースライダー（最低スコア・最低コメント数�
   await page.reload()
   await page.locator('.nav-item', { hasText: '設定' }).click()
   await expect(page.locator('.slider-row', { hasText: '最低スコア' })).toContainText('最低スコア: 500')
+
+  // 後続テストのフィード API に影響しないよう D1 を元に戻す
+  await request.patch('/api/settings/filter', { data: { minScore: 5, minComments: 0 } })
 })
 
 test('プッシュ通知トグルを操作してもクラッシュしない', async ({ page }) => {
