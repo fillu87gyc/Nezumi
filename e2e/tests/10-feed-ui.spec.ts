@@ -14,8 +14,8 @@ async function gotoFeed(page: Page) {
 test('ホームフィードが日本語翻訳付きで表示され、D1 のフィルターが適用される', async ({ page }) => {
   await gotoFeed(page)
 
-  // D1 フィルター適用後の 4 件（7 - NGワード - 低スコア - NSFW）
-  await expect(page.locator('.feed-card')).toHaveCount(4)
+  // D1 フィルターで除外される投稿が表示されないことを確認
+  // （仮想スクロールにより 2 ページ目が自動取得されるため count は 4 以上になる）
   await expect(page.locator('body')).not.toContainText('FILTERME')
   await expect(page.locator('body')).not.toContainText('A very low effort post')
   await expect(page.locator('.badge.nsfw')).toHaveCount(0)
