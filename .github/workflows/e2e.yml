@@ -28,10 +28,13 @@ jobs:
         with:
           version: 10
 
+      # Node 24 だと `playwright install` がブラウザ展開後にプロセスが終了せず
+      # 無限ハングする（展開自体は成功している）。ローカル検証済みの Node 22 に揃える。
+      # 実行環境は workerd なので CI の Node はツールチェーンにのみ影響する。
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
