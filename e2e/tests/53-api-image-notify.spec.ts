@@ -52,9 +52,30 @@ test('取得できない画像 URL は 400 を返す', async ({ request }) => {
   expect(await res.json()).toEqual({ error: 'Image fetch failed' })
 })
 
-test('OCR クォータエンドポイントが応答する', async ({ request }) => {
+test('OCR クォータエンドポイントが詳細ステータスを返す（#20）', async ({ request }) => {
   const res = await request.get('/api/image-translate/quota')
-  expect(await res.json()).toEqual({ status: 'ok' })
+  expect(res.ok()).toBe(true)
+  const body = await res.json()
+  // TokenBucketRateLimiter の StatusResult 構造を確認
+  expect(body).toMatchObject({
+    tokens: expect.any(Number),
+    dailyBase: expect.any(Number),
+    burstMax: expect.any(Number),
+    monthlyQuota: expect.any(Number),
+    usedThisMonth: expect.any(Number),
+    monthlyRemaining: expect.any(Number),
+    resetAt: expect.any(Number),
+  })
+  expect(body.burstMax).toBe(body.dailyBase * 2)
+  expect(body.monthlyRemaining).toBe(body.monthlyQuota - body.usedThisMonth)
+
+  recordApi({
+    id: '35-ocr-quota',
+    tickets: [20],
+    title: 'OCR クォータ詳細ステータス',
+    desc: 'トークンバケット状態（残トークン・月次消費・リセット時刻）を返す。',
+    evidence: body,
+  })
 })
 
 test('Push 購読の保存と未読メッセージ取得', async ({ request }) => {

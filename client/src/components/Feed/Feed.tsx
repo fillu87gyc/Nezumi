@@ -1,9 +1,10 @@
 import { useRef, useEffect } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { apiFetch } from '../../api/client'
+import { apiFetch, RateLimitError } from '../../api/client'
 import FeedCard from '../FeedCard/FeedCard'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { showToast } from '../Toast/Toast'
 import type { Post } from '../../../../src/api-types'
 import './Feed.css'
 
@@ -16,7 +17,7 @@ export default function Feed() {
   const autoTranslate = useSettingsStore((s) => s.autoTranslate)
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } =
     useInfiniteQuery({
       queryKey: ['feed', 'home', autoTranslate],
       queryFn: ({ pageParam }) => {
@@ -26,6 +27,10 @@ export default function Feed() {
       },
       initialPageParam: null as string | null,
       getNextPageParam: (lastPage) => lastPage.after || null,
+      retry: (count, err) => {
+        if (err instanceof RateLimitError) return false
+        return count < 1
+      },
     })
 
   const posts = data?.pages.flatMap((p) => p.posts) ?? []
@@ -57,7 +62,12 @@ export default function Feed() {
   }
 
   if (isError) {
-    return <div className="feed-error">フィードの読み込みに失敗しました。</div>
+    return (
+      <div className="feed-error">
+        <p>フィードの読み込みに失敗しました。</p>
+        <button className="retry-btn" onClick={() => { void refetch() }}>再試行</button>
+      </div>
+    )
   }
 
   return (

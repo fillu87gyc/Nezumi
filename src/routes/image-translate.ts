@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env, Variables, ImageTranslateResult } from '../types'
 import { requireAuth } from '../middleware/auth'
 import { claudeApiBase } from '../lib/endpoints'
+import { ocrLimiter } from '../lib/rateLimiter'
 
 export const imageTranslate = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -23,6 +24,28 @@ imageTranslate.post('/translate', async (c) => {
   const cached = await c.env.KV.get(cacheKey)
   if (cached) {
     return c.json(JSON.parse(cached))
+  }
+
+  // レート制限チェック（キャッシュミス時のみ消費）
+  const quota = await ocrLimiter.consume(c.env.KV)
+  if (!quota.allowed) {
+    const resetAt = quota.resetAt ?? 0
+    const retryAfter = Math.max(0, resetAt - Math.floor(Date.now() / 1000))
+    const message =
+      quota.reason === 'monthly_limit'
+        ? `月次 OCR クォータに達しました。リセット: ${new Date(resetAt * 1000).toLocaleDateString('ja-JP')}`
+        : `本日の OCR 上限に達しました。${retryAfter} 秒後に再試行してください。`
+
+    return c.json(
+      { error: message, reason: quota.reason },
+      429,
+      {
+        'X-RateLimit-Remaining': String(quota.remaining ?? 0),
+        'X-RateLimit-Monthly-Remaining': String(quota.monthlyRemaining ?? 0),
+        'X-RateLimit-Reset': String(resetAt),
+        'Retry-After': String(retryAfter),
+      }
+    )
   }
 
   const imgResponse = await fetch(imageUrl)
@@ -88,9 +111,31 @@ imageTranslate.post('/translate', async (c) => {
   }
 
   await c.env.KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 60 * 60 * 24 * 7 })
-  return c.json(result)
+  return c.json(result, 200, {
+    'X-RateLimit-Remaining': String(quota.remaining ?? 0),
+    'X-RateLimit-Monthly-Remaining': String(quota.monthlyRemaining ?? 0),
+    'X-RateLimit-Reset': String(quota.resetAt ?? 0),
+  })
 })
 
-imageTranslate.get('/quota', (c) => {
-  return c.json({ status: 'ok' })
+imageTranslate.get('/quota', async (c) => {
+  const s = await ocrLimiter.status(c.env.KV)
+  return c.json(s)
+})
+
+// 開発環境専用: E2E テスト用にバケットをリセット
+imageTranslate.post('/__test_exhaust', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'Not found' }, 404)
+  }
+  await ocrLimiter.forceExhaust(c.env.KV)
+  return c.json({ ok: true })
+})
+
+imageTranslate.post('/__test_reset', async (c) => {
+  if (c.env.ENVIRONMENT !== 'development') {
+    return c.json({ error: 'Not found' }, 404)
+  }
+  await ocrLimiter.reset(c.env.KV)
+  return c.json({ ok: true })
 })
