@@ -6,22 +6,11 @@ import { redditWwwBase, redditOauthBase } from '../lib/endpoints'
 
 export const auth = new Hono<{ Bindings: Env }>()
 
-async function passwordGrant(env: Env): Promise<{ access_token: string; expires_in: number; error?: string }> {
-  const res = await fetch(`${redditWwwBase(env)}/api/v1/access_token`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${env.REDDIT_CLIENT_ID}:${env.REDDIT_CLIENT_SECRET}`)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Nezumi/1.0',
-    },
-    body: new URLSearchParams({
-      grant_type: 'password',
-      username: env.REDDIT_USERNAME,
-      password: env.REDDIT_PASSWORD,
-      scope: 'read identity mysubreddits subscribe vote submit privatemessages',
-    }),
-  })
-  return res.json()
+function getBaseUrl(c: any): string {
+  if (c.env.BASE_URL) return c.env.BASE_URL
+  const host = c.req.header('host')
+  const hostname = host?.split(':')[0] || 'localhost'
+  return `https://${hostname}`
 }
 
 export async function refreshAccessToken(userId: string, env: Env): Promise<string> {
@@ -35,19 +24,91 @@ export async function refreshAccessToken(userId: string, env: Env): Promise<stri
     return tokenData.access_token
   }
 
-  // script app は refresh_token を返さないため、再度 password grant で取得する
-  const newToken = await passwordGrant(env)
-  const updated = { access_token: newToken.access_token, expires_at: now + newToken.expires_in }
+  const response = await fetch(`${redditWwwBase(env)}/api/v1/access_token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${env.REDDIT_CLIENT_ID}:${env.REDDIT_CLIENT_SECRET}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'Nezumi/1.0',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: tokenData.refresh_token,
+    }),
+  })
+
+  const newToken = await response.json() as { access_token: string; expires_in: number }
+  const updated = {
+    ...tokenData,
+    access_token: newToken.access_token,
+    expires_at: now + newToken.expires_in,
+  }
   await env.KV.put(`token:${userId}`, JSON.stringify(updated), { expirationTtl: 60 * 60 * 24 * 30 })
   return newToken.access_token
 }
 
 auth.get('/login', async (c) => {
-  const tokenData = await passwordGrant(c.env)
+  const state = crypto.randomUUID()
 
-  if (tokenData.error) {
-    console.log(`[auth:login] reddit error=${tokenData.error}`)
-    return c.redirect(`/?error=${tokenData.error}`)
+  await c.env.KV.put(`oauth_state:${state}`, '1', { expirationTtl: 300 })
+
+  const baseUrl = getBaseUrl(c)
+  const redirectUri = `${baseUrl}/auth/callback`
+
+  const params = new URLSearchParams({
+    client_id: c.env.REDDIT_CLIENT_ID,
+    response_type: 'code',
+    state,
+    redirect_uri: redirectUri,
+    duration: 'permanent',
+    scope: 'read identity mysubreddits subscribe vote submit privatemessages',
+  })
+
+  console.log(`[oauth:login] redirect_uri=${redirectUri}`)
+
+  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
+})
+
+auth.get('/callback', async (c) => {
+  console.log(`[oauth:callback] raw URL: ${c.req.url}`)
+  console.log(`[oauth:callback] host header: ${c.req.header('host')}`)
+
+  const { code, state, error } = c.req.query()
+
+  if (error) {
+    console.log(`[oauth:callback] error=${error}`)
+    return c.redirect(`/?error=${error}`)
+  }
+
+  const stateValid = await c.env.KV.get(`oauth_state:${state}`)
+  if (!stateValid) {
+    console.log(`[oauth:callback] state not found: ${state}`)
+    return c.redirect('/?error=invalid_state')
+  }
+  await c.env.KV.delete(`oauth_state:${state}`)
+
+  const baseUrl = getBaseUrl(c)
+  const redirectUri = `${baseUrl}/auth/callback`
+  console.log(`[oauth:callback] redirect_uri for token exchange=${redirectUri}`)
+
+  const tokenResponse = await fetch(`${redditWwwBase(c.env)}/api/v1/access_token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${c.env.REDDIT_CLIENT_ID}:${c.env.REDDIT_CLIENT_SECRET}`)}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'Nezumi/1.0',
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+    }),
+  })
+
+  const tokenData = await tokenResponse.json() as {
+    access_token: string
+    refresh_token: string
+    expires_in: number
   }
 
   const userResponse = await fetch(`${redditOauthBase(c.env)}/api/v1/me`, {
@@ -61,7 +122,11 @@ auth.get('/login', async (c) => {
   const now = Date.now() / 1000
   await c.env.KV.put(
     `token:${user.id}`,
-    JSON.stringify({ access_token: tokenData.access_token, expires_at: now + tokenData.expires_in }),
+    JSON.stringify({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_at: now + tokenData.expires_in,
+    }),
     { expirationTtl: 60 * 60 * 24 * 30 }
   )
 
@@ -94,7 +159,7 @@ auth.get('/login', async (c) => {
     maxAge: 60 * 60 * 24 * 30,
   })
 
-  console.log(`[auth:login] user=${user.id} login successful`)
+  console.log(`[oauth:callback] user=${user.id} login successful`)
   return c.redirect('/')
 })
 

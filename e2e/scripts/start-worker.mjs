@@ -21,8 +21,6 @@ export const E2E_VARS = {
   JWT_SECRET: 'e2e-test-jwt-secret-0123456789abcdef',
   REDDIT_CLIENT_ID: 'e2e-client-id',
   REDDIT_CLIENT_SECRET: 'e2e-client-secret',
-  REDDIT_USERNAME: 'e2e-alice',
-  REDDIT_PASSWORD: 'e2e-password',
   DEEPL_API_KEY: 'e2e-deepl-key',
   CLAUDE_API_KEY: 'e2e-claude-key',
   REDDIT_WWW_BASE: MOCK_BASE,

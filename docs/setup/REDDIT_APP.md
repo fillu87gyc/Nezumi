@@ -6,8 +6,8 @@
 2. 「create another app...」をクリック
 3. 以下を入力:
    - **name**: Nezumi
-   - **type**: script
-   - **redirect uri**: `http://localhost:8787`（script app では使われないが必須項目）
+   - **type**: web app
+   - **redirect uri**: `https://nezumi.fillu87gyc.workers.dev/auth/callback`
 4. 「create app」をクリック
 
 ## 2. 認証情報を取得
@@ -22,13 +22,11 @@
 read identity mysubreddits subscribe vote submit privatemessages
 ```
 
-script app は password grant を使うため、認可画面は表示されない。
-
 ## 4. シークレット設定
 
-```bash
-wrangler secret put REDDIT_CLIENT_ID
-wrangler secret put REDDIT_CLIENT_SECRET
-wrangler secret put REDDIT_USERNAME   # Reddit ログイン名
-wrangler secret put REDDIT_PASSWORD   # Reddit パスワード
-```
+Cloudflare ダッシュボード → Workers & Pages → nezumi → Settings → Variables and Secrets から追加:
+
+| 名前 | 値 |
+|---|---|
+| `REDDIT_CLIENT_ID` | Reddit アプリの client_id |
+| `REDDIT_CLIENT_SECRET` | Reddit アプリの client_secret |
