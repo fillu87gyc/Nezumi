@@ -6,24 +6,6 @@ import { redditWwwBase, redditOauthBase } from '../lib/endpoints'
 
 export const auth = new Hono<{ Bindings: Env }>()
 
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32)
-  crypto.getRandomValues(array)
-  return btoa(String.fromCharCode(...array))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(verifier)
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
-}
 
 function getBaseUrl(c: any): string {
   if (c.env.BASE_URL) return c.env.BASE_URL
@@ -69,14 +51,12 @@ export async function refreshAccessToken(userId: string, env: Env): Promise<stri
 
 auth.get('/login', async (c) => {
   const state = crypto.randomUUID()
-  const verifier = generateCodeVerifier()
-  const challenge = await generateCodeChallenge(verifier)
 
-  await c.env.KV.put(`oauth_state:${state}`, verifier, { expirationTtl: 300 })
+  await c.env.KV.put(`oauth_state:${state}`, '1', { expirationTtl: 300 })
 
   const baseUrl = getBaseUrl(c)
   const redirectUri = `${baseUrl}/auth/callback`
-  
+
   const params = new URLSearchParams({
     client_id: c.env.REDDIT_CLIENT_ID,
     response_type: 'code',
@@ -84,8 +64,6 @@ auth.get('/login', async (c) => {
     redirect_uri: redirectUri,
     duration: 'permanent',
     scope: 'read identity mysubreddits subscribe vote submit privatemessages',
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
   })
 
   console.log(`[oauth:login] redirect_uri=${redirectUri}`)
@@ -104,8 +82,8 @@ auth.get('/callback', async (c) => {
     return c.redirect(`/?error=${error}`)
   }
 
-  const verifier = await c.env.KV.get(`oauth_state:${state}`)
-  if (!verifier) {
+  const stateValid = await c.env.KV.get(`oauth_state:${state}`)
+  if (!stateValid) {
     console.log(`[oauth:callback] state not found: ${state}`)
     return c.redirect('/?error=invalid_state')
   }
@@ -126,7 +104,6 @@ auth.get('/callback', async (c) => {
       grant_type: 'authorization_code',
       code,
       redirect_uri: redirectUri,
-      code_verifier: verifier,
     }),
   })
 
