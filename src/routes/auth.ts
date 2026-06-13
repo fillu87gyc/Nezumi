@@ -66,7 +66,7 @@ auth.get('/login', async (c) => {
 
   await c.env.KV.put(`oauth_state:${state}`, verifier, { expirationTtl: 300 })
 
-  const baseUrl = c.env.BASE_URL || 'http://localhost:8787'
+  const baseUrl = c.env.BASE_URL || new URL(c.req.url).origin
   const params = new URLSearchParams({
     client_id: c.env.REDDIT_CLIENT_ID,
     response_type: 'code',
@@ -78,7 +78,7 @@ auth.get('/login', async (c) => {
     code_challenge_method: 'S256',
   })
 
-  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize.compact?${params}`)
+  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
 })
 
 auth.get('/callback', async (c) => {
@@ -94,7 +94,7 @@ auth.get('/callback', async (c) => {
   }
   await c.env.KV.delete(`oauth_state:${state}`)
 
-  const baseUrl = c.env.BASE_URL || 'http://localhost:8787'
+  const baseUrl = c.env.BASE_URL || new URL(c.req.url).origin
 
   const tokenResponse = await fetch(`${redditWwwBase(c.env)}/api/v1/access_token`, {
     method: 'POST',
