@@ -8,12 +8,12 @@ ENVIRONMENT = "development"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "79dfd28044184ddab4f67b34a2b788b1"
+id = "3fc909d549ba4cecb3b25bfcb4054c33"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "nezumi-db"
-database_id = "REPLACE_WITH_D1_ID"
+database_id = "4839b0a3-2d94-46aa-9a37-ee545297bb1b"
 
 [assets]
 directory = "./client/dist"
