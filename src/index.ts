@@ -9,8 +9,6 @@ import { settings } from './routes/settings'
 
 const app = new Hono<{ Bindings: Env }>()
 
-app.get('/', (c) => c.text('ok'))
-
 app.route('/auth', auth)
 app.route('/api/feed', feed)
 app.route('/api/translate', translate)

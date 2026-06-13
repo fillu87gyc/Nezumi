@@ -68,6 +68,44 @@ test('/auth/login は state と duration=permanent 付きで Reddit 認可 URL �
   })
 })
 
+test('OAuth コールバック成功後に / へリダイレクトし session Cookie が設定される', async ({ playwright }) => {
+  const anon = await playwright.request.newContext({
+    baseURL: 'http://127.0.0.1:8787',
+    storageState: EMPTY_STATE,
+    maxRedirects: 0,
+  })
+
+  // ログイン → Reddit 認可 URL
+  const loginRes = await anon.get('/auth/login')
+  expect(loginRes.status()).toBe(302)
+  const authorizeUrl = loginRes.headers()['location']
+
+  // モック Reddit が即座にコールバック URL へリダイレクト
+  const authorizeRes = await anon.get(authorizeUrl)
+  expect(authorizeRes.status()).toBe(302)
+  const callbackUrl = authorizeRes.headers()['location']
+  expect(callbackUrl).toContain('/auth/callback')
+  expect(callbackUrl).toContain('code=mock_auth_code')
+
+  // コールバック処理 → / へのリダイレクトと Cookie 設定を確認
+  const callbackRes = await anon.get(callbackUrl)
+  expect(callbackRes.status()).toBe(302)
+  expect(callbackRes.headers()['location']).toBe('/')
+  const setCookie = callbackRes.headers()['set-cookie'] ?? ''
+  expect(setCookie, 'session Cookie が設定される').toMatch(/session=/)
+  expect(setCookie, 'logged_in Cookie が設定される').toMatch(/logged_in=1/)
+
+  await anon.dispose()
+
+  recordApi({
+    id: '22-oauth-callback-redirect',
+    tickets: [3],
+    title: 'OAuth コールバック — / へのリダイレクト',
+    desc: 'OAuth 認可コード受け取り後、セッション処理が成功すると / にリダイレクトされ session/logged_in Cookie が設定される。',
+    evidence: { location: '/', cookies: ['session', 'logged_in'] },
+  })
+})
+
 test('不正な state で callback に来ると /?error=invalid_state に逃がす', async ({ playwright }) => {
   const anon = await playwright.request.newContext({
     baseURL: 'http://127.0.0.1:8787',
