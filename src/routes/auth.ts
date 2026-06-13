@@ -25,6 +25,12 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
     .replace(/=/g, '')
 }
 
+function getBaseUrl(c: any): string {
+  if (c.env.BASE_URL) return c.env.BASE_URL
+  const host = c.req.header('host')
+  return `https://${host}`
+}
+
 export async function refreshAccessToken(userId: string, env: Env): Promise<string> {
   const stored = await env.KV.get(`token:${userId}`)
   if (!stored) throw new Error('No token found')
@@ -66,7 +72,7 @@ auth.get('/login', async (c) => {
 
   await c.env.KV.put(`oauth_state:${state}`, verifier, { expirationTtl: 300 })
 
-  const baseUrl = c.env.BASE_URL || new URL(c.req.url).origin
+  const baseUrl = getBaseUrl(c)
   const params = new URLSearchParams({
     client_id: c.env.REDDIT_CLIENT_ID,
     response_type: 'code',
@@ -94,7 +100,7 @@ auth.get('/callback', async (c) => {
   }
   await c.env.KV.delete(`oauth_state:${state}`)
 
-  const baseUrl = c.env.BASE_URL || new URL(c.req.url).origin
+  const baseUrl = getBaseUrl(c)
 
   const tokenResponse = await fetch(`${redditWwwBase(c.env)}/api/v1/access_token`, {
     method: 'POST',
