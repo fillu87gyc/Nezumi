@@ -78,7 +78,7 @@ auth.get('/login', async (c) => {
     code_challenge_method: 'S256',
   })
 
-  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
+  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize.compact?${params}`)
 })
 
 auth.get('/callback', async (c) => {

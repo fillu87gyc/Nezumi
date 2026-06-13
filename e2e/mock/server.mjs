@@ -6,7 +6,7 @@
 // アプリ自身のスタック（Workers / KV / D1 / React クライアント）は一切モックしない。
 //
 // パスは衝突しないため 1 ポートで全サービスを提供する:
-//   Reddit www   : GET /api/v1/authorize, POST /api/v1/access_token
+//   Reddit www   : GET /api/v1/authorize, GET /api/v1/authorize.compact, POST /api/v1/access_token
 //   Reddit oauth : GET /api/v1/me, /hot|/new|/top, /r/:sub/:sort, /subreddits/mine/subscriber,
 //                  /comments/:id, /message/unread
 //   DeepL        : POST /v2/translate
@@ -97,7 +97,7 @@ const server = createServer(async (req, res) => {
   }
 
   // ---- Reddit www: OAuth ----
-  if (path === '/api/v1/authorize') {
+  if (path === '/api/v1/authorize' || path === '/api/v1/authorize.compact') {
     // 本物の Reddit は認可画面を出すが、E2E では即座に許可したものとして
     // redirect_uri へ code + state を付けて戻す
     const redirectUri = url.searchParams.get('redirect_uri')

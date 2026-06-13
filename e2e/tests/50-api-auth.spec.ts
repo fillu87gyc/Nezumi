@@ -52,7 +52,7 @@ test('/auth/login は state と duration=permanent 付きで Reddit 認可 URL �
   expect(res.status()).toBe(302)
   const location = res.headers()['location']
   const url = new URL(location)
-  expect(url.pathname).toBe('/api/v1/authorize')
+  expect(url.pathname).toBe('/api/v1/authorize.compact')
   expect(url.searchParams.get('state')).toBeTruthy()
   expect(url.searchParams.get('duration')).toBe('permanent')
   expect(url.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:8787/auth/callback')
