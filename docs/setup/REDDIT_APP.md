@@ -7,7 +7,7 @@
 3. 以下を入力:
    - **name**: Nezumi
    - **type**: web app
-   - **redirect uri**: `http://localhost:8787/auth/callback`（本番は `https://nezumi.example.com/auth/callback`）
+   - **redirect uri**: `https://nezumi.fillu87gyc.workers.dev/auth/callback`
 4. 「create app」をクリック
 
 ## 2. 認証情報を取得
@@ -24,7 +24,9 @@ read identity mysubreddits subscribe vote submit privatemessages
 
 ## 4. シークレット設定
 
-```bash
-wrangler secret put REDDIT_CLIENT_ID
-wrangler secret put REDDIT_CLIENT_SECRET
-```
+Cloudflare ダッシュボード → Workers & Pages → nezumi → Settings → Variables and Secrets から追加:
+
+| 名前 | 値 |
+|---|---|
+| `REDDIT_CLIENT_ID` | Reddit アプリの client_id |
+| `REDDIT_CLIENT_SECRET` | Reddit アプリの client_secret |
