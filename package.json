@@ -2,9 +2,10 @@
   "name": "nezumi",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.0.0",
   "engines": {
     "node": ">=22",
-    "pnpm": ">=10"
+    "pnpm": ">=11"
   },
   "scripts": {
     "dev:worker": "wrangler dev --local",
@@ -25,5 +26,10 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "wrangler": "^4.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.28.1"
+    }
   }
 }

@@ -10,7 +10,6 @@ on:
 permissions:
   contents: read
 
-# 同一ブランチの古いランは打ち切る（ハングしたランが 60 分枠を燃やし続けるのを防ぐ）
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -25,12 +24,7 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
-        with:
-          version: 10
 
-      # Node 24 だと `playwright install` がブラウザ展開後にプロセスが終了せず
-      # 無限ハングする（展開自体は成功している）。ローカル検証済みの Node 22 に揃える。
-      # 実行環境は workerd なので CI の Node はツールチェーンにのみ影響する。
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -63,9 +57,6 @@ jobs:
       - name: Install Playwright system dependencies
         run: npx playwright install-deps chromium
 
-      # ダウンロードが稀に無言でハングするため、1 回 3 分で打ち切って最大 3 回試す。
-      # DEBUG=pw:install でどのアーティファクト（chromium / headless shell / ffmpeg）で
-      # 止まったかをログに残す。
       - name: Install Playwright Chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
         timeout-minutes: 12
@@ -83,8 +74,6 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e
 
-      # 全機能のスクリーンショット + API 証跡 + ギャラリー（index.html / FEATURES.md）。
-      # どんな機能があるかはこのアーティファクトの index.html を開けば一発で分かる。
       - name: Upload feature catalog (screenshots)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
