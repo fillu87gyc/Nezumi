@@ -2,9 +2,10 @@
   "name": "nezumi",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.0.0",
   "engines": {
-    "node": ">=22",
-    "pnpm": ">=10"
+    "node": ">=24",
+    "pnpm": ">=11"
   },
   "scripts": {
     "dev:worker": "wrangler dev --local",
