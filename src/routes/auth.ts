@@ -28,7 +28,9 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 function getBaseUrl(c: any): string {
   if (c.env.BASE_URL) return c.env.BASE_URL
   const host = c.req.header('host')
-  return `https://${host}`
+  // Strip port from host if present (format: hostname:port)
+  const hostname = host?.split(':')[0] || 'localhost'
+  return `https://${hostname}`
 }
 
 export async function refreshAccessToken(userId: string, env: Env): Promise<string> {
@@ -73,34 +75,45 @@ auth.get('/login', async (c) => {
   await c.env.KV.put(`oauth_state:${state}`, verifier, { expirationTtl: 300 })
 
   const baseUrl = getBaseUrl(c)
+  const redirectUri = `${baseUrl}/auth/callback`
+  
   const params = new URLSearchParams({
     client_id: c.env.REDDIT_CLIENT_ID,
     response_type: 'code',
     state,
-    redirect_uri: `${baseUrl}/auth/callback`,
+    redirect_uri: redirectUri,
     duration: 'permanent',
     scope: 'read identity mysubreddits subscribe vote submit privatemessages',
     code_challenge: challenge,
     code_challenge_method: 'S256',
   })
 
+  console.log(`[oauth:login] redirect_uri=${redirectUri}`)
+
   return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
 })
 
 auth.get('/callback', async (c) => {
+  console.log(`[oauth:callback] raw URL: ${c.req.url}`)
+  console.log(`[oauth:callback] host header: ${c.req.header('host')}`)
+  
   const { code, state, error } = c.req.query()
 
   if (error) {
+    console.log(`[oauth:callback] error=${error}`)
     return c.redirect(`/?error=${error}`)
   }
 
   const verifier = await c.env.KV.get(`oauth_state:${state}`)
   if (!verifier) {
+    console.log(`[oauth:callback] state not found: ${state}`)
     return c.redirect('/?error=invalid_state')
   }
   await c.env.KV.delete(`oauth_state:${state}`)
 
   const baseUrl = getBaseUrl(c)
+  const redirectUri = `${baseUrl}/auth/callback`
+  console.log(`[oauth:callback] redirect_uri for token exchange=${redirectUri}`)
 
   const tokenResponse = await fetch(`${redditWwwBase(c.env)}/api/v1/access_token`, {
     method: 'POST',
@@ -112,7 +125,7 @@ auth.get('/callback', async (c) => {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: `${baseUrl}/auth/callback`,
+      redirect_uri: redirectUri,
       code_verifier: verifier,
     }),
   })
@@ -172,6 +185,7 @@ auth.get('/callback', async (c) => {
     maxAge: 60 * 60 * 24 * 30,
   })
 
+  console.log(`[oauth:callback] user=${user.id} login successful`)
   return c.redirect('/')
 })
 
