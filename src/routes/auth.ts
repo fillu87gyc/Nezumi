@@ -66,7 +66,7 @@ auth.get('/login', async (c) => {
 
   console.log(`[oauth:login] redirect_uri=${redirectUri}`)
 
-  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize?${params}`)
+  return c.redirect(`${redditWwwBase(c.env)}/api/v1/authorize.compact?${params}`)
 })
 
 auth.get('/callback', async (c) => {
