@@ -6,8 +6,8 @@
 2. 「create another app...」をクリック
 3. 以下を入力:
    - **name**: Nezumi
-   - **type**: web app
-   - **redirect uri**: `http://localhost:8787/auth/callback`（本番は `https://nezumi.example.com/auth/callback`）
+   - **type**: script
+   - **redirect uri**: `http://localhost:8787`（script app では使われないが必須項目）
 4. 「create app」をクリック
 
 ## 2. 認証情報を取得
@@ -22,9 +22,13 @@
 read identity mysubreddits subscribe vote submit privatemessages
 ```
 
+script app は password grant を使うため、認可画面は表示されない。
+
 ## 4. シークレット設定
 
 ```bash
 wrangler secret put REDDIT_CLIENT_ID
 wrangler secret put REDDIT_CLIENT_SECRET
+wrangler secret put REDDIT_USERNAME   # Reddit ログイン名
+wrangler secret put REDDIT_PASSWORD   # Reddit パスワード
 ```

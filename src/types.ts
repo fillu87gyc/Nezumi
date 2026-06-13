@@ -4,6 +4,8 @@ export interface Env {
   ASSETS: Fetcher
   REDDIT_CLIENT_ID: string
   REDDIT_CLIENT_SECRET: string
+  REDDIT_USERNAME: string
+  REDDIT_PASSWORD: string
   DEEPL_API_KEY: string
   CLAUDE_API_KEY: string
   JWT_SECRET: string

@@ -41,7 +41,7 @@ resetStats()
 
 function resetStats() {
   stats = {
-    tokenGrants: { authorization_code: 0, refresh_token: 0 },
+    tokenGrants: { authorization_code: 0, refresh_token: 0, password: 0 },
     feedRequests: 0,
     deeplCalls: 0,
     deeplTexts: 0,
